@@ -1,0 +1,9 @@
+{
+  "name": "Planning_generator",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {},
+  "dependencies": {
+    "jsdom": "^9.5.0"
+  }
+}
