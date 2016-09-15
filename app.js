@@ -36,9 +36,7 @@ var MIDDLE_WEEK = 30;
 var FIRST_YEAR = 2016;
 var SECOND_YEAR = 2017;
 var REGEX_DATE = /S(\d+)-J(\d)/;
-var VOID_WORD = "void";
 var USE_WORD = "slot";
-var TRANS_WORD = "transition";
 var NB_MIN_PER_SPAN = 15;
 
 
@@ -90,8 +88,8 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
         for (i = days.length - 1; i >= 0; i--) {
             day = days[i];
 
-            for (j = 0; j < day.childNodes.length;) {
-                if (day.childNodes[j].tagName !== "TD" || (day.childNodes[j].id && day.childNodes[j].id.indexOf(TRANS_WORD) > -1)) {
+            for (j = 0; j < day.childNodes.length;) { // On enlève les TH, les séparateurs
+                if (day.childNodes[j].tagName !== "TD" || day.childNodes[j].className === "week-separator") {
                     day.removeChild(day.childNodes[j]);
                 } else {
                     j++;
@@ -114,7 +112,7 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
 
         var event;
         var year, week_num, day_num, start, end;
-        var min, padding;
+        var min, bis_min, padding;
 
         for (i = 0; i < daysPerGroup.grp1.length; i++) {
             day = daysPerGroup.grp1[i];
@@ -123,16 +121,18 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
             for (j = 0; j < day.childNodes.length; j++) {
                 event = day.childNodes[j];
 
+                padding = 0;
 
-                if (event.id.indexOf(USE_WORD) > -1) {
-                    if (event.colSpan > 14) {
-                        padding = -3;
-                    } else if (event.colSpan > 9) {
-                        padding = -2;
-                    } else if (event.colSpan > 4) {
-                        padding = -1;
-                    } else {
-                        padding = 0;
+                if (event.id && event.id.indexOf(USE_WORD) > -1) {
+
+                    bis_min = min;
+
+                    for (k = event.colSpan - 1; k > 0; k--) {
+                        bis_min += NB_MIN_PER_SPAN;
+                        if (bis_min % 60 === 0) {
+                            padding--;
+                            k--;
+                        }
                     }
 
                     week_num = Number(REGEX_DATE.exec(event.id)[1]);
@@ -152,16 +152,13 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
                         description: event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.replace(new RegExp('&nbsp;', 'g'), ''),
                         location: event.childNodes[0].childNodes[0].childNodes[1].childNodes[1].innerHTML.replace('@-', '').replace(new RegExp('&nbsp;', 'g'), '')
                     });
-
-
-                    /*
-                     On augmente le temps par rapport à la taille de la cellule
-                     */
-
-                    min += NB_MIN_PER_SPAN * (Number(event.colSpan) + padding);
-                } else {
-                    min += NB_MIN_PER_SPAN * Number(event.colSpan);
                 }
+                /*
+                 On augmente le temps par rapport à la taille de la cellule
+                 */
+
+                min += NB_MIN_PER_SPAN * (Number(event.colSpan) + padding);
+
 
                 if (min >= 18 * 60) min = 8 * 60;
             }
