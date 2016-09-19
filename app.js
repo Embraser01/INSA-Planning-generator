@@ -17,42 +17,45 @@ function normalize(str) {
 }
 
 
-function getEvent(event, planning_tab, min) {
-
-    var padding = 0;
+function getEvent(event, planning_tab) {
 
     if (event.id && event.id.indexOf(USE_WORD) > -1) {
-        var year, week_num, day_num, start, end, bis_min;
 
-        bis_min = min;
+        var padding = 0;
+        var day_num = Number(REGEX_DATE.exec(event.id)[2]);
+        var week_num = Number(REGEX_DATE.exec(event.id)[1]);
+        var year = week_num > MIDDLE_WEEK ? FIRST_YEAR : SECOND_YEAR;
+
+        var nb_min = Number(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.substr(0, 2))
+            * Number(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.substr(3, 2))
+            + 8 * 60;
+
+
+        var start = getDateOfISOWeek(week_num, year);
+        start.setDate(start.getDate() + day_num - 1);
+        start.setMinutes(nb_min);
+
 
         for (k = event.colSpan - 1; k > 0; k--) {
-            bis_min += NB_MIN_PER_SPAN;
-            if (bis_min % 60 === 0) {
+            nb_min += NB_MIN_PER_SPAN;
+            if (nb_min % 60 === 0) {
                 padding--;
                 k--;
             }
         }
 
-        week_num = Number(REGEX_DATE.exec(event.id)[1]);
-        day_num = Number(REGEX_DATE.exec(event.id)[2]);
-        year = week_num > MIDDLE_WEEK ? FIRST_YEAR : SECOND_YEAR;
-        start = getDateOfISOWeek(week_num, year);
-        start.setDate(start.getDate() + day_num - 1);
-        start.setMinutes(min);
-
-        end = new Date(start.getTime());
+        var end = new Date(start.getTime());
         end.setMinutes(end.getMinutes() + NB_MIN_PER_SPAN * (Number(event.colSpan) + padding));
+
 
         planning_tab.push({
             start: start,
             end: end,
             title: normalize(event.childNodes[0].childNodes[0].childNodes[0].childNodes[0].innerHTML),
-            description: normalize(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML),
-            location: normalize(event.childNodes[0].childNodes[0].childNodes[1].childNodes[1].innerHTML.replace('@-', ''))
+            description: normalize(event.childNodes[0].childNodes[0].childNodes[1].childNodes[1].innerHTML),
+            location: normalize(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.substr(0, 6).replace('@-', ''))
         });
     }
-    return padding;
 }
 
 function pad(str, max) {
@@ -123,7 +126,7 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
 
 
         /*
-         On enleve tous les h2
+         On enleve tous les h2 (je sais même plus si c'est utile xD )
          */
 
         var h2s = document.getElementsByTagName("h2");
@@ -191,8 +194,6 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
          */
 
         var event;
-
-        var min, end_of_common_events; // On suppose que il n'y a jamais de cours communs après des cours en groupe
         var day_grp_1, day_grp_2, day_grp_3, day_grp_4;
 
 
@@ -202,8 +203,6 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
             day_grp_3 = daysPerGroup.grp3[i];
             day_grp_4 = daysPerGroup.grp4[i];
 
-            min = 8 * 60; // Chaque journée commence à 8h00
-            end_of_common_events = 0;
 
             /*
              PLANNING SUR UN JOUR DU GROUPE 1 + CM
@@ -212,21 +211,13 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
             for (j = 0; j < day_grp_1.childNodes.length; j++) {
                 event = day_grp_1.childNodes[j];
 
-                // On garde la dernière heure ou il n'y avait pas de groupe
-                if (event.rowSpan < NB_GROUPS && !end_of_common_events) end_of_common_events = min;
+                getEvent(event, planning.grp1);
 
                 if (event.rowSpan == NB_GROUPS) { // Si c'est un CM, on l'ajoute à tout le monde
-                    getEvent(event, planning.grp2, min);
-                    getEvent(event, planning.grp3, min);
-                    getEvent(event, planning.grp4, min);
+                    getEvent(event, planning.grp2);
+                    getEvent(event, planning.grp3);
+                    getEvent(event, planning.grp4);
                 }
-                /*
-                 On augmente le temps par rapport à la taille de la cellule
-                 */
-
-                min += NB_MIN_PER_SPAN * (Number(event.colSpan) + getEvent(event, planning.grp1, min));
-
-                if (min >= 18 * 60) min = 8 * 60;
             }
 
 
@@ -234,13 +225,9 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
              PLANNING SUR UN JOUR DU GROUPE 2
              */
 
-            min = end_of_common_events;
-
             for (j = 0; j < day_grp_2.childNodes.length; j++) {
                 event = day_grp_2.childNodes[j];
-
-                min += NB_MIN_PER_SPAN * (Number(event.colSpan) + getEvent(event, planning.grp2, min));
-                if (min >= 18 * 60) min = 8 * 60;
+                getEvent(event, planning.grp2);
             }
 
 
@@ -248,13 +235,9 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
              PLANNING SUR UN JOUR DU GROUPE 3
              */
 
-            min = end_of_common_events;
-
             for (j = 0; j < day_grp_3.childNodes.length; j++) {
                 event = day_grp_3.childNodes[j];
-
-                min += NB_MIN_PER_SPAN * (Number(event.colSpan) + getEvent(event, planning.grp3, min));
-                if (min >= 18 * 60) min = 8 * 60;
+                getEvent(event, planning.grp3);
             }
 
 
@@ -262,13 +245,9 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
              PLANNING SUR UN JOUR DU GROUPE 4
              */
 
-            min = end_of_common_events;
-
             for (j = 0; j < day_grp_4.childNodes.length; j++) {
                 event = day_grp_4.childNodes[j];
-
-                min += NB_MIN_PER_SPAN * (Number(event.colSpan) + getEvent(event, planning.grp4, min));
-                if (min >= 18 * 60) min = 8 * 60;
+                getEvent(event, planning.grp4);
             }
         }
 
