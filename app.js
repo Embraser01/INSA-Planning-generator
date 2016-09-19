@@ -1,6 +1,18 @@
 // TODO Requete vers le site ! (en attendant : fichier local)
+// TODO Passer en ES6 c'est pas beau ES5
 
 
+//=================//
+//===== UTILS =====//
+//=================//
+
+
+/**
+ * Renvoi la date en fonction du numero de la semaine et de l'année (http://stackoverflow.com/a/16591175/5285167)
+ * @param w semaine
+ * @param y année
+ * @returns {Date} date en fonction de l'année et de la semaine
+ */
 function getDateOfISOWeek(w, y) {
     var simple = new Date(y, 0, 1 + (w - 1) * 7);
     var dow = simple.getDay();
@@ -12,57 +24,102 @@ function getDateOfISOWeek(w, y) {
     return ISOweekStart;
 }
 
-function normalize(str) {
-    return str ? str.replace(new RegExp('&nbsp;', 'g'), '') : '';
-}
-
-
-function getEvent(event, planning_tab) {
-
-    if (event.id && event.id.indexOf(USE_WORD) > -1) {
-
-        var padding = 0;
-        var day_num = Number(REGEX_DATE.exec(event.id)[2]);
-        var week_num = Number(REGEX_DATE.exec(event.id)[1]);
-        var year = week_num > MIDDLE_WEEK ? FIRST_YEAR : SECOND_YEAR;
-
-        var nb_min = Number(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.substr(0, 2))
-            * Number(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.substr(3, 2))
-            + 8 * 60;
-
-
-        var start = getDateOfISOWeek(week_num, year);
-        start.setDate(start.getDate() + day_num - 1);
-        start.setMinutes(nb_min);
-
-
-        for (k = event.colSpan - 1; k > 0; k--) {
-            nb_min += NB_MIN_PER_SPAN;
-            if (nb_min % 60 === 0) {
-                padding--;
-                k--;
-            }
-        }
-
-        var end = new Date(start.getTime());
-        end.setMinutes(end.getMinutes() + NB_MIN_PER_SPAN * (Number(event.colSpan) + padding));
-
-
-        planning_tab.push({
-            start: start,
-            end: end,
-            title: normalize(event.childNodes[0].childNodes[0].childNodes[0].childNodes[0].innerHTML),
-            description: normalize(event.childNodes[0].childNodes[0].childNodes[1].childNodes[1].innerHTML),
-            location: normalize(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.substr(0, 6).replace('@-', ''))
-        });
-    }
-}
-
+/**
+ * Rajoute des 0 devant un nombre si besoin
+ * @param str {Number | String} nombre à normaliser
+ * @param max {Number} Nombre de caractère à avoir à la fin
+ * @returns {String} Nombre modifié
+ */
 function pad(str, max) {
     str = str.toString();
     return str.length < max ? pad("0" + str, max) : str;
 }
 
+/**
+ * Change les &nbsp; en espace normal
+ * @param str {String} Chaîne de caractères
+ * @returns {String} Chaîne de caractères modifiée
+ */
+function normalize(str) {
+    return str ? str.replace(new RegExp('&nbsp;', 'g'), '') : '';
+}
+
+
+//===============//
+//===== APP =====//
+//===============//
+
+var fs = require('fs');
+var jsdom = require('jsdom');
+var i, j, k;
+var MIDDLE_WEEK = 30;
+var YEAR = 2016;
+var REGEX_DATE = /S(\d+)-J(\d)/;
+var USE_WORD = "slot";
+var NB_MIN_PER_SPAN = 15;
+var NB_GROUPS = 4;
+
+
+var IF_YEAR = 4;
+
+
+/**
+ * Rajoute un évenement à un tableau
+ * @param event {Object} Evenement en version HTML
+ * @param planning_tab {Array} Liste d'évenements
+ */
+function getEvent(event, planning_tab) {
+
+    // Si ce n'est pas un cours
+    if (!(event.id && event.id.indexOf(USE_WORD) > -1)) return;
+
+
+    var padding = 0; // Padding des marges de chaque heure
+    var day_num = Number(REGEX_DATE.exec(event.id)[2]);
+    var week_num = Number(REGEX_DATE.exec(event.id)[1]);
+    var year = week_num > MIDDLE_WEEK ? YEAR : YEAR + 1;
+
+    // Nombre de minute depuis le début de la journée
+    var nb_min = Number(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.substr(0, 2)) * 60
+        + Number(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.substr(3, 2));
+
+
+    // Date du début du cours
+    var start = getDateOfISOWeek(week_num, year);
+    start.setDate(start.getDate() + day_num - 1);
+    start.setMinutes(nb_min);
+
+
+    // Boucle pour prendre en compte les mazrges non affichées
+    for (k = event.colSpan - 1; k > 0; k--) {
+        nb_min += NB_MIN_PER_SPAN;
+        if (nb_min % 60 === 0) {
+            padding--;
+            k--;
+        }
+    }
+
+
+    // Date de fin de cours
+    var end = new Date(start.getTime());
+    end.setMinutes(end.getMinutes() + NB_MIN_PER_SPAN * (Number(event.colSpan) + padding));
+
+
+    // On ajoute l'évenement au tableau (CHILDNODECEPTION)
+    planning_tab.push({
+        start: start,
+        end: end,
+        title: normalize(event.childNodes[0].childNodes[0].childNodes[0].childNodes[0].innerHTML),
+        description: normalize(event.childNodes[0].childNodes[0].childNodes[1].childNodes[1].innerHTML),
+        location: normalize(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.slice(6, -1).replace('@', ''))
+    });
+}
+
+/**
+ * Transforme une date au format demandé par VCal
+ * @param date {Date}
+ * @returns {String}
+ */
 function getVCalDate(date) {
     return ''
         + date.getUTCFullYear()
@@ -74,6 +131,11 @@ function getVCalDate(date) {
         + '00Z';
 }
 
+/**
+ * Génère un fichier ics
+ * @param planning_tab {Array} tableau d'évenement
+ * @param file {String} nom du fichier
+ */
 function exportCalendar(planning_tab, file) {
     var event;
 
@@ -82,43 +144,38 @@ function exportCalendar(planning_tab, file) {
      */
 
     var exportData = '';
-    exportData += 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//lol/mdr//Marc-Antoine F. Exporter v0.1//FR\n';
+    exportData += 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//lol/mdr//c_pa_fo//Marc-Antoine F. Exporter v1.0//FR\n';
 
     for (i = 0; i < planning_tab.length; i++) {
         event = planning_tab[i];
-
-        console.log(getVCalDate(event.start));
 
         exportData += 'BEGIN:VEVENT\n';
         exportData += 'DTSTART:' + getVCalDate(event.start) + '\n';
         exportData += 'DTEND:' + getVCalDate(event.end) + '\n';
         exportData += 'SUMMARY:' + event.title + '\n';
         exportData += 'LOCATION:' + event.location + '\n';
-        exportData += 'DESCRIPTION:' + event.description + '\n';
+        exportData += 'DESCRIPTION:' + event.description + '\n'; // Nom du prof
         exportData += 'END:VEVENT\n';
     }
 
     exportData += 'END:VCALENDAR';
 
+
+    if (!fs.existsSync('./res/' + IF_YEAR)) fs.mkdirSync('./res/' + IF_YEAR);
+
     return fs.writeFileSync(file, exportData);
 }
 
 
-var fs = require('fs');
-var jsdom = require('jsdom');
-var i, j, k;
-var MIDDLE_WEEK = 30;
-var FIRST_YEAR = 2016;
-var SECOND_YEAR = 2017;
-var REGEX_DATE = /S(\d+)-J(\d)/;
-var USE_WORD = "slot";
-var NB_MIN_PER_SPAN = 15;
-var NB_GROUPS = 4;
-
-
-fs.readFile('res/planning.html', 'utf8', function (err, data) {
+/*
+ * On commence par lire le fichier HTML (c'est temporaire)
+ */
+fs.readFile('res/planning' + IF_YEAR + 'IF.html', 'utf8', function (err, data) {
     if (err) throw err;
 
+    /*
+     * On instancie une fenêtre JSDOM
+     */
     jsdom.env(data, [], function (err, window) {
         if (err) throw err;
 
@@ -159,8 +216,6 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
             grp4: []
         };
 
-        console.log("Importation de %d semaines en cours", weeks.length);
-
         for (i = 0; i < days.length; i++) {
             day = days[i];
 
@@ -190,7 +245,7 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
         nb_days /= NB_GROUPS;
 
         /*
-         Maintenant on recupère chaque cours du groupe 1
+         Maintenant on recupère chaque cours en fonction du groupe
          */
 
         var event;
@@ -217,6 +272,8 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
                     getEvent(event, planning.grp2);
                     getEvent(event, planning.grp3);
                     getEvent(event, planning.grp4);
+                } else if (event.rowSpan == 2) { // Si c'est avec deux classes (obligé avec l'edt des 4IF)
+                    getEvent(event, planning.grp2);
                 }
             }
 
@@ -234,10 +291,13 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
             /*
              PLANNING SUR UN JOUR DU GROUPE 3
              */
-
             for (j = 0; j < day_grp_3.childNodes.length; j++) {
                 event = day_grp_3.childNodes[j];
                 getEvent(event, planning.grp3);
+
+                if (event.rowSpan == 2) { // Si c'est avec deux classes (obligé avec l'edt des 4IF)
+                    getEvent(event, planning.grp4);
+                }
             }
 
 
@@ -257,10 +317,10 @@ fs.readFile('res/planning.html', 'utf8', function (err, data) {
 
         var errors = [];
 
-        errors.push(exportCalendar(planning.grp1, "res/edt_grp1.ics"));
-        errors.push(exportCalendar(planning.grp2, "res/edt_grp2.ics"));
-        errors.push(exportCalendar(planning.grp3, "res/edt_grp3.ics"));
-        errors.push(exportCalendar(planning.grp4, "res/edt_grp4.ics"));
+        errors.push(exportCalendar(planning.grp1, "res/" + IF_YEAR + "/edt_grp1.ics"));
+        errors.push(exportCalendar(planning.grp2, "res/" + IF_YEAR + "/edt_grp2.ics"));
+        errors.push(exportCalendar(planning.grp3, "res/" + IF_YEAR + "/edt_grp3.ics"));
+        errors.push(exportCalendar(planning.grp4, "res/" + IF_YEAR + "/edt_grp4.ics"));
 
         console.log("OUTPUT :", errors);
     });
