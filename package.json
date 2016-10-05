@@ -4,6 +4,14 @@
   "private": true,
   "scripts": {},
   "dependencies": {
-    "jsdom": "^9.5.0"
+    "express": "^4.14.0",
+    "jsdom": "^9.5.0",
+    "moment": "^2.15.1",
+    "request": "latest"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-prompt": "^0.2.0",
+    "gulp-util": "^3.0.7"
   }
 }
