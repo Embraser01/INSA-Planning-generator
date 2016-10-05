@@ -353,13 +353,18 @@ function parse(data, if_year) {
 }
 
 
-setInterval(function () {
+/**
+ * Met à jour les tous les emplois du temps
+ */
+function update() {
 
     var cookie = '';
 
     request.post(LOGIN_LINK, {
         username: CONFIG.login,
-        password: decrypt(CONFIG.password)
+        password: decrypt(CONFIG.password),
+        _eventId :'submit',
+        submit: 'SE CONNECTER'
     }, function (err, res) {
         if (err) return console.log(err);
 
@@ -380,7 +385,10 @@ setInterval(function () {
             });
         }
     });
-}, INTERVAL * 60 * 60 * 1000); // En heure
+}
+setInterval(update, INTERVAL * 60 * 60 * 1000); // En heure
+
+update();
 
 
 //===============//
@@ -479,5 +487,5 @@ function onError(error) {
 function onListening() {
     var addr = server.address();
     var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
-    console.debug('Listening on ' + bind);
+    console.log('Listening on ' + bind);
 }
