@@ -24,7 +24,8 @@ inquirer.prompt([{
 
     var string = JSON.stringify(config, null, 4);
     fs.writeFile('./config.json', string, function (err) {
-        if (err) return cb(console.log('Erreur lors de la création de la config :' + err));
+        if (err) return console.log('Erreur lors de la création de la config :' + err);
+        console.log('La configuration est terminée');
     });
 });
 
