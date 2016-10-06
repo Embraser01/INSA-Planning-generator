@@ -432,21 +432,6 @@ app.get('/export/:num_year/:num_group', function (req, res, next) {
     next();
 });
 
-app.use(function (req, res, next) {
-    var err = new Error('Not Found');
-    err.status = 404;
-    next(err);
-});
-
-// Production error handler, no stacktraces leaked to user.
-app.use(function (req, res) {
-    res.status(err.status || 500);
-    res.render('error', {
-        message: err.message,
-        error: {}
-    });
-});
-
 
 // Create HTTP or HTTPS server.
 var server;
