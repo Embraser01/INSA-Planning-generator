@@ -7,13 +7,12 @@
 var crypto = require('crypto');
 var fs = require('fs');
 var jsdom = require('jsdom');
-var request = require('request');
+var request = require('request').defaults({jar: true});
 var moment = require('moment');
 var express = require('express');
 
 var app = express();
 
-var i, j, k;
 var MIDDLE_WEEK = 30;
 var YEAR = 2016;
 var REGEX_DATE = /S(\d+)-J(\d)/;
@@ -24,11 +23,13 @@ var NB_GROUPS = 4;
 var IF_YEARS = [3, 4, 5];
 var CONFIG = JSON.parse(fs.readFileSync('./config.json'));
 var YEAR_VAR = '$if_year';
-var COOKIE_NAME = 'AGIMUS';
 var LOGIN_LINK = 'https://login.insa-lyon.fr/cas/login';
 var EDT_LINK = 'https://servif-cocktail.insa-lyon.fr/EdT/' + YEAR_VAR + 'IF.php';
 var INTERVAL = 6;
 var PORT = 8003;
+var DEFAULT_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36'
+};
 
 
 //=================//
@@ -83,6 +84,22 @@ function decrypt(password) {
     return decipher.update(password, 'hex', 'utf8') + decipher.final('utf8');
 }
 
+/**
+ * Transforme une date au format demandé par VCal
+ * @param date {Date}
+ * @returns {String}
+ */
+function getVCalDate(date) {
+    return ''
+        + date.getUTCFullYear()
+        + pad(date.getUTCMonth() + 1, 2)
+        + pad(date.getUTCDate(), 2)
+        + 'T'
+        + pad(date.getUTCHours(), 2)
+        + pad(date.getUTCMinutes(), 2)
+        + '00Z';
+}
+
 
 //===============//
 //===== APP =====//
@@ -103,7 +120,7 @@ function getEvent(event, planning_tab) {
     var padding = 0; // Padding des marges de chaque heure
     var day_num = Number(REGEX_DATE.exec(event.id)[2]);
     var week_num = Number(REGEX_DATE.exec(event.id)[1]);
-    var year = week_num > MIDDLE_WEEK ? YEAR : YEAR + 1;
+    var year = week_num > MIDDLE_WEEK ? YEAR : YEAR + 1; // Choix de l'année en fonction du numéro de semaine
 
     // Nombre de minute depuis le début de la journée
     var nb_min = Number(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.substr(0, 2)) * 60
@@ -116,12 +133,12 @@ function getEvent(event, planning_tab) {
     start.setMinutes(nb_min);
 
 
-    // Boucle pour prendre en compte les mazrges non affichées
-    for (k = event.colSpan - 1; k > 0; k--) {
+    // Boucle pour prendre en compte les marges non affichées
+    for (var i = event.colSpan - 1; i > 0; i--) {
         nb_min += NB_MIN_PER_SPAN;
         if (nb_min % 60 === 0) {
             padding--;
-            k--;
+            i--;
         }
     }
 
@@ -142,22 +159,6 @@ function getEvent(event, planning_tab) {
 }
 
 /**
- * Transforme une date au format demandé par VCal
- * @param date {Date}
- * @returns {String}
- */
-function getVCalDate(date) {
-    return ''
-        + date.getUTCFullYear()
-        + pad(date.getUTCMonth() + 1, 2)
-        + pad(date.getUTCDate(), 2)
-        + 'T'
-        + pad(date.getUTCHours(), 2)
-        + pad(date.getUTCMinutes(), 2)
-        + '00Z';
-}
-
-/**
  * Génère un fichier ics
  * @param planning_tab {Array} tableau d'évenement
  * @param file {String} nom du fichier
@@ -170,10 +171,9 @@ function exportCalendar(planning_tab, file, if_year) {
      Maintenant on va créer un fichier iCal depuis le planning
      */
 
-    var exportData = '';
-    exportData += 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//lol/mdr//c_pa_fo//Marc-Antoine F. Exporter v1.0//FR\n';
+    var exportData = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//lol/mdr//c_pa_fo//Marc-Antoine F. Exporter v1.0//FR\n';
 
-    for (i = 0; i < planning_tab.length; i++) {
+    for (var i = 0; i < planning_tab.length; i++) {
         event = planning_tab[i];
 
         exportData += 'BEGIN:VEVENT\n';
@@ -199,6 +199,8 @@ function exportCalendar(planning_tab, file, if_year) {
  * @param if_year {Number} Numéro de l'année
  */
 function parse(data, if_year) {
+    var i, j;
+
     /*
      * On instancie une fenêtre JSDOM
      */
@@ -348,44 +350,65 @@ function parse(data, if_year) {
         errors.push(exportCalendar(planning.grp3, "export/" + if_year + "/edt_grp3.ics", if_year));
         errors.push(exportCalendar(planning.grp4, "export/" + if_year + "/edt_grp4.ics", if_year));
 
-        console.log("OUTPUT :", errors);
+        for (i = 0; i < errors.length; i++) if (errors[i]) console.log("OUTPUT :", errors[i]);
     });
 }
-
 
 /**
  * Met à jour les tous les emplois du temps
  */
 function update() {
 
-    var cookie = '';
+    var execution = '';
+    var lt = '';
+    var i;
 
-    request.post(LOGIN_LINK, {
-        username: CONFIG.login,
-        password: decrypt(CONFIG.password),
-        _eventId :'submit',
-        submit: 'SE CONNECTER'
-    }, function (err, res) {
-        if (err) return console.log(err);
+    /*
+     On récupère la page de login pour récupérer les variables "execution" & "lt" (sécurité)
+     */
+    jsdom.env(LOGIN_LINK, [], function (err, window) {
+            if (err) return console.log(err);
 
-        for (i = 0; i < res.headers['set-cookie'].length; i++) {
-            if (res.headers['set-cookie'][i].indexOf(COOKIE_NAME) !== -1)
-                cookie = res.headers['set-cookie'][i];
-        }
+            execution = window.document.querySelectorAll('input[name="execution"]')[0].value;
+            lt = window.document.querySelectorAll('input[name="lt"]')[0].value;
 
-        for (i = 0; i < IF_YEARS.length; i++) {
-            request({
-                url: EDT_LINK.replace(YEAR_VAR, '' + IF_YEARS[i]),
-                headers: {
-                    'Cookie': cookie
-                }
-            }, function (err, res, body) {
+            /*
+             Maintenant on se connecte (représenté par le cookie "AGIMUS")
+             */
+            request.post(LOGIN_LINK, {
+                form: {
+                    username: CONFIG.login,
+                    password: decrypt(CONFIG.password),
+                    lt: lt,
+                    execution: execution,
+                    _eventId: 'submit'
+                },
+                headers: DEFAULT_HEADERS
+            }, function (err) {
                 if (err) return console.log(err);
-                parse(body, IF_YEARS[i]);
+
+                /**
+                 * Fonction pour faire la requête vers l'emploi du temps en fonction de l'année
+                 * @param if_year
+                 */
+                function responseParser(if_year) {
+                    request({
+                        url: EDT_LINK.replace(YEAR_VAR, '' + IF_YEARS[if_year]),
+                        headers: DEFAULT_HEADERS
+                    }, function (err, res, body) {
+                        if (err) return console.log(err);
+                        parse(body, IF_YEARS[if_year]);
+                    });
+                }
+
+                // Pour chaque années, on fabrique les calendriers de chaque groupes
+                for (i = 0; i < IF_YEARS.length; i++) responseParser(i);
             });
         }
-    });
+    );
 }
+
+// On lance le système pour actualiser toutes les INTERVAL heures
 setInterval(update, INTERVAL * 60 * 60 * 1000); // En heure
 
 update();
@@ -396,14 +419,14 @@ update();
 //===============//
 
 
-app.use('/export/:num_year/:num_group', function (req, res, next) {
+app.get('/export/:num_year/:num_group', function (req, res, next) {
 
-    for (i = 0; i < IF_YEARS.length; i++) {
+    for (var i = 0; i < IF_YEARS.length; i++) {
         if (Number(req.params.num_year) === IF_YEARS[i]
-            && Number(req.params.num_groupe) >= 1
-            && Number(req.params.num_groupe) <= 4) {
+            && Number(req.params.num_group) >= 1
+            && Number(req.params.num_group) <= 4) {
 
-            return res.sendFile('./export/' + req.params.num_year + '/edt_grp' + req.params.num_groupe + '.ics');
+            return res.sendFile(__dirname + '/export/' + req.params.num_year + '/edt_grp' + req.params.num_group + '.ics');
         }
     }
     next();
