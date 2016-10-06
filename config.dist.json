@@ -1,6 +1,6 @@
 {
-  "login":"username",
-  "password":"cryptedPassword",
+  "login": "username",
+  "password": "cryptedPassword",
   "KEY": "key",
   "ssl": false,
   "sslKey": "fakePath",

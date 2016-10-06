@@ -181,7 +181,7 @@ function exportCalendar(planning_tab, file, if_year) {
         exportData += 'DTEND:' + getVCalDate(event.end) + '\n';
         exportData += 'SUMMARY:' + event.title + '\n';
         exportData += 'LOCATION:' + event.location + '\n';
-        exportData += 'DESCRIPTION:' + event.description + ' (exporté le ' + moment().format('MM/DD/YYYY') + ')\n'; // Nom du prof
+        exportData += 'DESCRIPTION:' + event.description + ' (exporté le ' + moment().format('DD/MM/YYYY') + ')\n'; // Nom du prof
         exportData += 'END:VEVENT\n';
     }
 
