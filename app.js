@@ -438,25 +438,14 @@ app.use(function (req, res, next) {
     next(err);
 });
 
-// Development error handler, will print stacktrace.
-if (app.get('env') === 'development') {
-    app.use(function (req, res) {
-        res.status(err.status || 500);
-        res.render('error', {
-            message: err.message,
-            error: err
-        });
+// Production error handler, no stacktraces leaked to user.
+app.use(function (req, res) {
+    res.status(err.status || 500);
+    res.render('error', {
+        message: err.message,
+        error: {}
     });
-} else {
-    // Production error handler, no stacktraces leaked to user.
-    app.use(function (req, res) {
-        res.status(err.status || 500);
-        res.render('error', {
-            message: err.message,
-            error: {}
-        });
-    });
-}
+});
 
 
 // Create HTTP or HTTPS server.
