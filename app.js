@@ -358,6 +358,10 @@ function parse(data, if_year) {
         errors.push(exportCalendar(planning.grp4, "export/" + if_year + "/edt_grp4.ics", if_year));
 
         for (i = 0; i < errors.length; i++) if (errors[i]) console.log("OUTPUT :", errors[i]);
+
+        // Empeche la fuite de mémoire ??
+        planning = null;
+        errors = null;
     });
 }
 
