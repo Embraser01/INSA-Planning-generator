@@ -175,6 +175,13 @@ function exportCalendar(planning_tab, file, if_year) {
     var event;
 
     /*
+     On vérifie si un fichier existe déjà, si oui et que le planning est vide, on ne fait rien
+     */
+
+    if (planning_tab.length == 0 && fs.existsSync(file)) return;
+
+
+    /*
      Maintenant on va créer un fichier iCal depuis le planning
      */
 
