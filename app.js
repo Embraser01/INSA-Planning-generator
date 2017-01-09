@@ -20,6 +20,8 @@ var express = require('express');
 
 var app = express();
 
+var cache = {};
+
 var MIDDLE_WEEK = 30;
 var YEAR = 2016;
 var REGEX_DATE = /S(\d+)-J(\d)/;
@@ -27,6 +29,8 @@ var USE_WORD = "slot";
 var NB_MIN_PER_SPAN = 15;
 var NB_GROUPS = 4;
 
+
+var MAX_DAYS_TO_NOTIFY = 15;
 var IF_YEARS = [3, 4, 5];
 var CONFIG = JSON.parse(fs.readFileSync('./config.json'));
 var YEAR_VAR = '$if_year';
@@ -178,7 +182,7 @@ function exportCalendar(planning_tab, file, if_year) {
      On vérifie si un fichier existe déjà, si oui et que le planning est vide, on ne fait rien
      */
 
-    if (planning_tab.length == 0 && fs.existsSync(file)) return;
+    if (planning_tab.length === 0 && fs.existsSync(file)) return;
 
 
     /*
@@ -206,6 +210,61 @@ function exportCalendar(planning_tab, file, if_year) {
 
     return fs.writeFileSync(file, exportData);
 }
+
+
+function compare(cache, planning) {
+    if (!cache || cache.length === 0) return [];
+
+    var iCache = 0;
+    var iPlanning = 0;
+
+    var now = new Date();
+    var max = new Date();
+    max.setDate(max.getDate() + MAX_DAYS_TO_NOTIFY);
+
+    var messages = [];
+
+    while (iCache < cache.length && cache[iCache].start < now) iCache++;
+    while (iPlanning < planning.length && planning[iPlanning].start < now) iPlanning++;
+
+    while (iPlanning < planning.length) {
+        // Check only until MAX DAY TO NOTIFY
+        if (planning[iPlanning].start > max) break;
+
+
+        // Suppression
+        if (planning[iPlanning].start >= cache[iCache].end) {
+            messages.push("Le cours suivant du " + moment(cache[iCache].start).format('DD/MM HH:MM') + " a été supprimé ou déplacé : " + cache[iCache].title);
+            iCache++;
+
+
+            // Remplacer
+        } else if (planning[iPlanning].start === cache[iCache].start && planning[iPlanning].title !== cache[iCache].title) {
+            messages.push("Le cours suivant du " + moment(cache[iCache].start).format('DD/MM HH:MM') + " a été remplacé : " + cache[iCache].title);
+            iPlanning++;
+            iCache++;
+
+
+            // Ajouter
+        } else if (planning[iPlanning].end <= cache[iCache].start) {
+            messages.push("Le cours suivant du " + moment(planning[iPlanning].start).format('DD/MM HH:MM') + " a été ajouté : " + planning[iPlanning].title);
+            iPlanning++;
+
+
+            // Modifier
+        } else if (planning[iPlanning].start === cache[iCache].start
+            && planning[iPlanning].title === cache[iCache].title
+            && (planning[iPlanning].location !== cache[iCache].location || planning[iPlanning].end !== cache[iCache].end)
+        ) {
+            messages.push("Le cours suivant du " + moment(cache[iCache].start).format('DD/MM HH:MM') + " a été modifié : " + planning[iPlanning].title);
+            iPlanning++;
+            iCache++;
+        }
+    }
+
+    return messages;
+}
+
 
 /**
  * Parse le document HTML pour récupérer à la fin un .ics
@@ -310,12 +369,19 @@ function parse(data, if_year) {
 
                 getEvent(event, planning.grp1);
 
+                //noinspection EqualityComparisonWithCoercionJS
                 if (event.rowSpan == NB_GROUPS) { // Si c'est un CM, on l'ajoute à tout le monde
                     getEvent(event, planning.grp2);
                     getEvent(event, planning.grp3);
                     getEvent(event, planning.grp4);
-                } else if (event.rowSpan == 2) { // Si c'est avec deux classes (obligé avec l'edt des 4IF)
-                    getEvent(event, planning.grp2);
+
+
+                } else {
+
+                    //noinspection EqualityComparisonWithCoercionJS
+                    if (event.rowSpan == 2) { // Si c'est avec deux classes (obligé avec l'edt des 4IF)
+                        getEvent(event, planning.grp2);
+                    }
                 }
             }
 
@@ -337,6 +403,7 @@ function parse(data, if_year) {
                 event = day_grp_3.childNodes[j];
                 getEvent(event, planning.grp3);
 
+                //noinspection EqualityComparisonWithCoercionJS
                 if (event.rowSpan == 2) { // Si c'est avec deux classes (obligé avec l'edt des 4IF)
                     getEvent(event, planning.grp4);
                 }
@@ -366,8 +433,15 @@ function parse(data, if_year) {
 
         for (i = 0; i < errors.length; i++) if (errors[i]) console.log("OUTPUT :", errors[i]);
 
+        // On check si des evenenement on changés
+
+        //TODO Detect event change
+
+
+        // On enregistre dans un cache le planning
+        cache[if_year] = planning;
+
         // Empeche la fuite de mémoire ??
-        planning = null;
         errors = null;
     });
 }
