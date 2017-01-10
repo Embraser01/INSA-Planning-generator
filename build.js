@@ -7,7 +7,7 @@
 
 'use strict';
 
-var crypto = require('crypto');
+var utils = require('./src/utils');
 var fs = require('fs');
 var inquirer = require('inquirer');
 
@@ -15,12 +15,8 @@ var inquirer = require('inquirer');
 // Load config template and generate a new KEY
 
 var config = JSON.parse(fs.readFileSync('./config.dist.json'));
-var KEY = randomString(64);
+var KEY = utils.randomString(64);
 config.KEY = KEY;
-
-// Load cipher for future use
-var cipher = crypto.createCipher('aes-256-ctr', KEY);
-
 
 // Ask user for personal informations
 inquirer.prompt([{
@@ -34,7 +30,7 @@ inquirer.prompt([{
 }], function (res) {
 
     // Crypt Password
-    config.password = cipher.update(res.password, 'utf8', 'hex') + cipher.final('hex');
+    config.password = utils.encrypt(res.password, KEY);
     config.login = res.login;
 
     // Write config file
@@ -44,15 +40,3 @@ inquirer.prompt([{
         console.log('La configuration est terminée');
     });
 });
-
-/*===== UTILS =====*/
-
-function randomString(nb) {
-    var text = '';
-    var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-    for (var i = 0; i < nb; i++)
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-    return text;
-}
