@@ -5,8 +5,6 @@
  under certain conditions; type `show c' for details.
  */
 
-// TODO Passer en ES6 c'est pas beau ES5
-
 //=================================//
 //===== VARIABLES & CONSTANTS =====//
 //=================================//
@@ -19,6 +17,7 @@ let jsdom = require('jsdom');
 let request = require('request').defaults({jar: true});
 let moment = require('moment');
 let express = require('express');
+let Feed = require('feed');
 
 let utils = require('./utils');
 
@@ -62,6 +61,15 @@ const IF_SECTION = {
 // Global variables
 
 let cache = {};
+let feeds = {};
+
+// Init feeds
+for (let if_year in IF_SECTION) {
+    feeds[if_year] = {};
+    for (let grp of IF_SECTION[if_year]) {
+        feeds[if_year][grp] = "";
+    }
+}
 
 
 //===============//
