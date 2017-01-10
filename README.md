@@ -51,7 +51,7 @@ node build.js
 ### Lancer le serveur
 
 ```bash
-node app.js
+npm start
 ```
 
 Pour le lancer avec screen :
@@ -63,7 +63,7 @@ if screen -list | grep -q "calendrier_insa"; then
   screen -S calendrier_insa -X quit
 fi
 cd /path/to/INSA-Planning-generator
-screen -dmS calendrier_insa node app.js
+screen -dmS calendrier_insa npm start
 ```
 
 

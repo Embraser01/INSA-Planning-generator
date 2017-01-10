@@ -20,7 +20,7 @@ let request = require('request').defaults({jar: true});
 let moment = require('moment');
 let express = require('express');
 
-let utils = require('./src/utils');
+let utils = require('./utils');
 
 let app = express();
 
@@ -32,8 +32,8 @@ const PORT = 8003;
 const MAX_DAYS_TO_NOTIFY = 15;
 const YEAR = 2016;
 const FILE_NAME = 'edt_grp%d.ics';
-const EXPORT_FOLDER = './export/';
-const CONFIG = JSON.parse(fs.readFileSync('./config.json'));
+const EXPORT_FOLDER = '../export/';
+const CONFIG = JSON.parse(fs.readFileSync('../config.json'));
 
 
 // INSA Connection Specific
@@ -49,6 +49,7 @@ const YEAR_VAR = '$if_year';
 const EDT_LINK = 'https://servif-cocktail.insa-lyon.fr/EdT/' + YEAR_VAR + 'IF.php';
 const MIDDLE_WEEK = 30;
 const REGEX_DATE = /S(\d+)-J(\d)/;
+const REGEX_CLASSNAME = /row-group-(\d+)/;
 const USE_WORD = "slot";
 const NB_MIN_PER_SPAN = 15;
 const IF_SECTION = {
@@ -223,7 +224,7 @@ function compare(cache, planning) {
  * @param if_year {Number} Numéro de l'année
  */
 function parse(data, if_year) {
-    let i, j;
+    let i, j, grp;
 
     /*
      * On instancie une fenêtre JSDOM
@@ -255,46 +256,43 @@ function parse(data, if_year) {
         let day = {};
         let nb_days = 0;
 
-        let daysPerGroup = {
-            grp1: [],
-            grp2: [],
-            grp3: [],
-            grp4: []
-        };
-        let planning = {
-            grp1: [],
-            grp2: [],
-            grp3: [],
-            grp4: []
-        };
+
+        //
+        let daysPerGroup = {};
+        let planning = {};
+
+        for (grp of IF_SECTION[if_year]) {
+            daysPerGroup[grp] = [];
+            planning[grp] = [];
+        }
+
 
         for (i = 0; i < days.length; i++) {
             day = days[i];
 
-            for (j = 0; j < day.childNodes.length;) { // On enlève les TH, les séparateurs
+
+            // On enlève les TH, les séparateurs
+            for (j = 0; j < day.childNodes.length;) {
                 if (day.childNodes[j].tagName !== "TD" || day.childNodes[j].className === "week-separator") {
                     day.removeChild(day.childNodes[j]);
                 } else {
                     j++;
                 }
             }
-            if (day.className && day.className.indexOf("row-group-1") !== -1) {
-                daysPerGroup.grp1.push(day);
-                nb_days++;
-            } else if (day.className && day.className.indexOf("row-group-2") !== -1) {
-                daysPerGroup.grp2.push(day);
-                nb_days++;
-            } else if (day.className && day.className.indexOf("row-group-3") !== -1) {
-                daysPerGroup.grp3.push(day);
-                nb_days++;
-            } else if (day.className && day.className.indexOf("row-group-4") !== -1) {
-                daysPerGroup.grp4.push(day);
+
+            // On ajoute l'element HTML au tableau du groupe (les CM sont mis dans le groupe 1
+
+            let matches = REGEX_CLASSNAME.exec(day.className);
+
+            if (matches.length === 1) {
+                daysPerGroup[matches[0]].push(day);
                 nb_days++;
             }
         }
 
         // On divise  par le nombre de groupe
-        nb_days /= NB_GROUPS;
+        nb_days /= IF_SECTION[if_year].length;
+
 
         /*
          Maintenant on recupère chaque cours en fonction du groupe
@@ -359,6 +357,7 @@ function parse(data, if_year) {
                     addEvent(event, planning.grp4);
                 }
             }
+            // FIXME Finir de modifier pour être totalement générique + cache
 
 
             /*
@@ -375,14 +374,12 @@ function parse(data, if_year) {
          On exporte les calendrier au format iCal
          */
 
-        let errors = [];
+        let error;
+        for (grp of IF_SECTION[if_year]) {
+            error = exportCalendar(planning[grp], if_year, grp);
 
-        errors.push(exportCalendar(planning.grp1, "export/" + if_year + "/edt_grp1.ics", if_year));
-        errors.push(exportCalendar(planning.grp2, "export/" + if_year + "/edt_grp2.ics", if_year));
-        errors.push(exportCalendar(planning.grp3, "export/" + if_year + "/edt_grp3.ics", if_year));
-        errors.push(exportCalendar(planning.grp4, "export/" + if_year + "/edt_grp4.ics", if_year));
-
-        for (i = 0; i < errors.length; i++) if (errors[i]) console.log("OUTPUT :", errors[i]);
+            if (error) console.log("Erreur lors de l'enregistrement du planning %dIF-GRP%d :", if_year, grp, error);
+        }
 
         // On check si des evenenement on changés
 
@@ -404,7 +401,6 @@ function update() {
 
     let execution = '';
     let lt = '';
-    let i;
 
     /*
      On récupère la page de login pour récupérer les letiables "execution" & "lt" (sécurité)
@@ -436,16 +432,16 @@ function update() {
                  */
                 function responseParser(if_year) {
                     request({
-                        url: EDT_LINK.replace(YEAR_VAR, '' + IF_YEARS[if_year]),
+                        url: EDT_LINK.replace(YEAR_VAR, '' + if_year),
                         headers: DEFAULT_HEADERS
                     }, function (err, res, body) {
                         if (err) return console.log(err);
-                        parse(body, IF_YEARS[if_year]);
+                        parse(body, if_year);
                     });
                 }
 
                 // Pour chaque années, on fabrique les calendriers de chaque groupes
-                for (i = 0; i < IF_YEARS.length; i++) responseParser(i);
+                for (let i in IF_SECTION) responseParser(i);
             });
         }
     );
@@ -464,14 +460,12 @@ update();
 
 app.get('/export/:num_year/:num_group', function (req, res, next) {
 
-    for (let i = 0; i < IF_YEARS.length; i++) {
-        if (Number(req.params.num_year) === IF_YEARS[i]
-            && Number(req.params.num_group) >= 1
-            && Number(req.params.num_group) <= 4) {
+    // Si le groupe et l'année existent
+    if (IF_SECTION[req.params.num_year] && IF_SECTION[req.params.num_year][req.params.num_group]) {
 
-            return res.sendFile((EXPORT_FOLDER + req.params.num_year + '/' + utils.node.format(FILE_NAME, req.params.num_group));
-        }
+        return res.sendFile((EXPORT_FOLDER + req.params.num_year + '/' + utils.node.format(FILE_NAME, req.params.num_group)));
     }
+
     next();
 });
 
