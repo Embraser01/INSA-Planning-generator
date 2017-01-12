@@ -44,13 +44,14 @@ const DEFAULT_HEADERS = {
 
 // INSA EDT IF Specific
 
+const EVENT_SELECTOR = 'td[id^=slot]';
 const YEAR_VAR = '$if_year';
 const EDT_LINK = 'https://servif-cocktail.insa-lyon.fr/EdT/' + YEAR_VAR + 'IF.php';
 const MIDDLE_WEEK = 30;
 const REGEX_DATE = /S(\d+)-J(\d)/;
 const REGEX_CLASSNAME = /row-group-(\d+)/;
-const USE_WORD = "slot";
 const NB_MIN_PER_SPAN = 15;
+
 const IF_SECTION = {
     3: [1, 2, 3, 4],
     4: [1, 2, 3, 4],
@@ -60,12 +61,14 @@ const IF_SECTION = {
 
 // Global variables
 
+let planning = {};
 let cache = {};
 let feeds = {};
 
-// Init feeds
+// Init feeds & planning
 for (let if_year in IF_SECTION) {
     feeds[if_year] = {};
+    planning[if_year] = {};
     for (let grp of IF_SECTION[if_year]) {
         feeds[if_year][grp] = "";
     }
@@ -80,13 +83,14 @@ for (let if_year in IF_SECTION) {
 /**
  * Rajoute un évenement à un tableau
  * @param event {Object} Evenement en version HTML
- * @param planning_tab {Array} Liste d'évenements
  */
-function addEvent(event, planning_tab) {
+function getEvent(event) {
+    let i;
 
-    // Si ce n'est pas un cours
-    if (!(event.id && event.id.indexOf(USE_WORD) > -1)) return;
+    let detailsElement = event.childNodes[0].childNodes[0].childNodes[1];
 
+    let start_group = Number(REGEX_CLASSNAME.exec(event.parentNode.className)[0]);
+    let end_group = start_group + Number(event.rowSpan);
 
     let padding = 0; // Padding des marges de chaque heure
     let day_num = Number(REGEX_DATE.exec(event.id)[2]);
@@ -94,8 +98,8 @@ function addEvent(event, planning_tab) {
     let year = week_num > MIDDLE_WEEK ? YEAR : YEAR + 1; // Choix de l'année en fonction du numéro de semaine
 
     // Nombre de minute depuis le début de la journée
-    let nb_min = Number(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.substr(0, 2)) * 60
-        + Number(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.substr(3, 2));
+    let nb_min = Number(detailsElement.childNodes[0].innerHTML.substr(0, 2)) * 60
+        + Number(detailsElement.childNodes[0].innerHTML.substr(3, 2));
 
 
     // Date du début du cours
@@ -105,7 +109,7 @@ function addEvent(event, planning_tab) {
 
 
     // Boucle pour prendre en compte les marges non affichées
-    for (let i = event.colSpan - 1; i > 0; i--) {
+    for (i = event.colSpan - 1; i > 0; i--) {
         nb_min += NB_MIN_PER_SPAN;
         if (nb_min % 60 === 0) {
             padding--;
@@ -119,30 +123,37 @@ function addEvent(event, planning_tab) {
     end.setMinutes(end.getMinutes() + NB_MIN_PER_SPAN * (Number(event.colSpan) + padding));
 
 
-    // On ajoute l'évenement au tableau (CHILDNODECEPTION)
-    planning_tab.push({
+    // On recuppère les groupes affectés
+
+    let groups = [];
+
+    for (i = start_group; i < end_group; i++) groups.push(i);
+
+
+    // On renvoie un evennement propre
+    return {
         start: start,
         end: end,
         title: utils.normalize(event.childNodes[0].childNodes[0].childNodes[0].childNodes[0].innerHTML),
-        description: utils.normalize(event.childNodes[0].childNodes[0].childNodes[1].childNodes[1].innerHTML),
-        location: utils.normalize(event.childNodes[0].childNodes[0].childNodes[1].childNodes[0].innerHTML.slice(6, -1).replace('@', ''))
-    });
+        description: utils.normalize(detailsElement.childNodes[1].innerHTML),
+        location: utils.normalize(detailsElement.childNodes[0].innerHTML.slice(6, -1).replace('@', '')),
+        groups: groups
+    };
 }
 
 /**
- * Génère un fichier ics depuis un tableau
- * @param planning_tab {Array} tableau d'évenement
+ * Génère un fichier ics depuis un objet
+ * @param grp_planning_obj {Object} objet (map) d'évenement
  * @param if_year {Number}
  * @param grp_num {Number}
  */
-function exportCalendar(planning_tab, if_year, grp_num) {
-    let event;
+function exportCalendar(grp_planning_obj, if_year, grp_num) {
 
     /*
      On vérifie si un fichier existe déjà, si oui et que le planning est vide, on ne fait rien
      */
 
-    if (planning_tab.length === 0 && fs.existsSync(EXPORT_FOLDER + if_year + '/' + utils.node.format(FILE_NAME, grp_num))) return;
+    if (!grp_planning_obj && fs.existsSync(EXPORT_FOLDER + if_year + '/' + utils.node.format(FILE_NAME, grp_num))) return;
 
 
     /*
@@ -151,8 +162,7 @@ function exportCalendar(planning_tab, if_year, grp_num) {
 
     let exportData = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//lol/mdr//c_pa_fo//Marc-Antoine F. Exporter v1.0//FR\n';
 
-    for (let i = 0; i < planning_tab.length; i++) {
-        event = planning_tab[i];
+    for (let event in grp_planning_obj) {
 
         exportData += 'BEGIN:VEVENT\n';
         exportData += 'DTSTART:' + utils.getVCalDate(event.start) + '\n';
@@ -232,7 +242,7 @@ function compare(cache, planning) {
  * @param if_year {Number} Numéro de l'année
  */
 function parse(data, if_year) {
-    let i, j, grp;
+    let grp, event;
 
     /*
      * On instancie une fenêtre JSDOM
@@ -242,149 +252,39 @@ function parse(data, if_year) {
 
         let document = window.document;
 
-
         /*
-         On enleve tous les h2 (je sais même plus si c'est utile xD )
+         On initialise les plannings de if_year
          */
-
-        let h2s = document.getElementsByTagName("h2");
-
-        for (i = 0; i < h2s.length; i++) h2s[i].parentNode.removeChild(h2s[i]);
-
-
-        /*
-         On recupère les edt par jours
-         */
-
-        let weeks = document.querySelectorAll('table.edt') || [];
-        let days = [];
-        for (i = 0; i < weeks.length; i++)
-            days = days.concat(Array.prototype.slice.call(weeks[i].querySelectorAll('.hour')));
-
-        let day = {};
-        let nb_days = 0;
-
-
-        //
-        let daysPerGroup = {};
-        let planning = {};
 
         for (grp of IF_SECTION[if_year]) {
-            daysPerGroup[grp] = [];
-            planning[grp] = [];
+            planning[if_year][grp] = {};
         }
-
-
-        for (i = 0; i < days.length; i++) {
-            day = days[i];
-
-
-            // On enlève les TH, les séparateurs
-            for (j = 0; j < day.childNodes.length;) {
-                if (day.childNodes[j].tagName !== "TD" || day.childNodes[j].className === "week-separator") {
-                    day.removeChild(day.childNodes[j]);
-                } else {
-                    j++;
-                }
-            }
-
-            // On ajoute l'element HTML au tableau du groupe (les CM sont mis dans le groupe 1
-
-            let matches = REGEX_CLASSNAME.exec(day.className);
-
-            if (matches.length === 1) {
-                daysPerGroup[matches[0]].push(day);
-                nb_days++;
-            }
-        }
-
-        // On divise  par le nombre de groupe
-        nb_days /= IF_SECTION[if_year].length;
-
 
         /*
-         Maintenant on recupère chaque cours en fonction du groupe
+         On récupère tous les evenements (querySelectorAll) et on les transforme en objet qu'on enregistre
          */
 
-        let event;
-        let day_grp_1, day_grp_2, day_grp_3, day_grp_4;
+        let events = document.querySelectorAll(EVENT_SELECTOR);
+        let eventObject;
 
+        for (event of events) {
+            eventObject = getEvent(event);
 
-        for (i = 0; i < nb_days; i++) {
-            day_grp_1 = daysPerGroup.grp1[i];
-            day_grp_2 = daysPerGroup.grp2[i];
-            day_grp_3 = daysPerGroup.grp3[i];
-            day_grp_4 = daysPerGroup.grp4[i];
-
-
-            /*
-             PLANNING SUR UN JOUR DU GROUPE 1 + CM
-             */
-
-            for (j = 0; j < day_grp_1.childNodes.length; j++) {
-                event = day_grp_1.childNodes[j];
-
-                addEvent(event, planning.grp1);
-
-                //noinspection EqualityComparisonWithCoercionJS
-                if (event.rowSpan == NB_GROUPS) { // Si c'est un CM, on l'ajoute à tout le monde
-                    addEvent(event, planning.grp2);
-                    addEvent(event, planning.grp3);
-                    addEvent(event, planning.grp4);
-
-
-                } else {
-
-                    //noinspection EqualityComparisonWithCoercionJS
-                    if (event.rowSpan == 2) { // Si c'est avec deux classes (obligé avec l'edt des 4IF)
-                        addEvent(event, planning.grp2);
-                    }
+            if (eventObject) {
+                for (grp of eventObject.groups) {
+                    planning[if_year][grp][eventObject.start.getTime()] = eventObject;
                 }
-            }
-
-
-            /*
-             PLANNING SUR UN JOUR DU GROUPE 2
-             */
-
-            for (j = 0; j < day_grp_2.childNodes.length; j++) {
-                event = day_grp_2.childNodes[j];
-                addEvent(event, planning.grp2);
-            }
-
-
-            /*
-             PLANNING SUR UN JOUR DU GROUPE 3
-             */
-            for (j = 0; j < day_grp_3.childNodes.length; j++) {
-                event = day_grp_3.childNodes[j];
-                addEvent(event, planning.grp3);
-
-                //noinspection EqualityComparisonWithCoercionJS
-                if (event.rowSpan == 2) { // Si c'est avec deux classes (obligé avec l'edt des 4IF)
-                    addEvent(event, planning.grp4);
-                }
-            }
-            // FIXME Finir de modifier pour être totalement générique + cache
-
-
-            /*
-             PLANNING SUR UN JOUR DU GROUPE 4
-             */
-
-            for (j = 0; j < day_grp_4.childNodes.length; j++) {
-                event = day_grp_4.childNodes[j];
-                addEvent(event, planning.grp4);
             }
         }
 
+
         /*
-         On exporte les calendrier au format iCal
+         Maintenant, on peut exporté le planning pour chaque groupe
          */
 
         let error;
         for (grp of IF_SECTION[if_year]) {
-            error = exportCalendar(planning[grp], if_year, grp);
+            error = exportCalendar(planning[if_year][grp], if_year, grp);
 
             if (error) console.log("Erreur lors de l'enregistrement du planning %dIF-GRP%d :", if_year, grp, error);
         }
@@ -396,9 +296,6 @@ function parse(data, if_year) {
 
         // On enregistre dans un cache le planning
         cache[if_year] = planning;
-
-        // Empeche la fuite de mémoire ??
-        errors = null;
     });
 }
 
