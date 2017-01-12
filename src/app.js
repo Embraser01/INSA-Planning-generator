@@ -33,6 +33,7 @@ const MAX_DAYS_TO_NOTIFY = 15;
 const MAX_FEED_SIZE = 30;
 const YEAR = 2016;
 const FILE_NAME = 'edt_grp%d.ics';
+const FEED_DATE_FORMAT = 'DD/MM à HH:MM';
 const EXPORT_FOLDER = path.normalize(__dirname + '/../export/');
 const CONFIG = JSON.parse(fs.readFileSync('./config.json'));
 
@@ -127,6 +128,8 @@ function getEvent(event) {
     let start = utils.getDateOfISOWeek(week_num, year);
     start.setDate(start.getDate() + day_num - 1);
     start.setMinutes(nb_min);
+    start.setSeconds(0);
+    start.setMilliseconds(0);
 
 
     // Boucle pour prendre en compte les marges non affichées
@@ -142,6 +145,8 @@ function getEvent(event) {
     // Date de fin de cours
     let end = new Date(start.getTime());
     end.setMinutes(end.getMinutes() + NB_MIN_PER_SPAN * (Number(event.colSpan) + padding));
+    end.setSeconds(0);
+    end.setMilliseconds(0);
 
 
     // On recuppère les groupes affectés
@@ -245,7 +250,7 @@ function compare(old, recent) {
             messages.push(
                 utils.node.format("Le cours [%s] du %s a été ajouté ",
                     recentEvent.title,
-                    moment(recentEvent.start).format('DD/MM HH:MM')
+                    moment(recentEvent.start).format(FEED_DATE_FORMAT)
                 )
             );
         }
@@ -256,7 +261,7 @@ function compare(old, recent) {
             messages.push(
                 utils.node.format("Le cours [%s] du %s a été supprimé ou déplacé",
                     oldEvent.title,
-                    moment(oldEvent.start).format('DD/MM HH:MM')
+                    moment(oldEvent.start).format(FEED_DATE_FORMAT)
                 )
             );
         }
@@ -268,7 +273,7 @@ function compare(old, recent) {
             messages.push(
                 utils.node.format("Le cours [%s] du %s a été remplacé par [%s]",
                     oldEvent.title,
-                    moment(oldEvent.start).format('DD/MM HH:MM'),
+                    moment(oldEvent.start).format(FEED_DATE_FORMAT),
                     recentEvent.title
                 )
             );
@@ -281,7 +286,7 @@ function compare(old, recent) {
             messages.push(
                 utils.node.format("Le cours [%s] du %s finira à %s au lieu de %s",
                     recentEvent.title,
-                    moment(oldEvent.start).format('DD/MM HH:MM'),
+                    moment(oldEvent.start).format(FEED_DATE_FORMAT),
                     moment(recentEvent.end).format('HH:MM'),
                     moment(oldEvent.end).format('HH:MM')
                 )
@@ -294,7 +299,7 @@ function compare(old, recent) {
             messages.push(
                 utils.node.format("Changement de salle pour le cours [%s] du %s, salle : %s",
                     recentEvent.title,
-                    moment(oldEvent.start).format('DD/MM HH:MM'),
+                    moment(oldEvent.start).format(FEED_DATE_FORMAT),
                     recentEvent.location
                 )
             );
@@ -306,7 +311,7 @@ function compare(old, recent) {
             messages.push(
                 utils.node.format("Changement d'intervenant(s) pour le cours [%s] du %s, intervenant(s) : %s",
                     recentEvent.title,
-                    moment(oldEvent.start).format('DD/MM HH:MM'),
+                    moment(oldEvent.start).format(FEED_DATE_FORMAT),
                     recentEvent.description
                 )
             );
