@@ -33,7 +33,7 @@ const MAX_DAYS_TO_NOTIFY = 15;
 const MAX_FEED_SIZE = 30;
 const YEAR = 2016;
 const FILE_NAME = 'edt_grp%d.ics';
-const FEED_DATE_FORMAT = 'DD/MM à HH:MM';
+const FEED_DATE_FORMAT = 'DD/MM à HH:mm';
 const EXPORT_FOLDER = path.normalize(__dirname + '/../export/');
 const CONFIG = JSON.parse(fs.readFileSync('./config.json'));
 
@@ -223,7 +223,7 @@ function compare(old, recent) {
 
 
     let now = new Date();
-    let max = new Date();
+    let max = new Date(now);
     max.setDate(max.getDate() + MAX_DAYS_TO_NOTIFY);
 
     let messages = [];
@@ -282,13 +282,13 @@ function compare(old, recent) {
 
         // Si durée modifiée
 
-        if (oldEvent.end !== recentEvent.end) {
+        if (oldEvent.end.getTime() !== recentEvent.end.getTime()) {
             messages.push(
                 utils.node.format("Le cours [%s] du %s finira à %s au lieu de %s",
                     recentEvent.title,
                     moment(oldEvent.start).format(FEED_DATE_FORMAT),
-                    moment(recentEvent.end).format('HH:MM'),
-                    moment(oldEvent.end).format('HH:MM')
+                    moment(recentEvent.end).format('HH:mm'),
+                    moment(oldEvent.end).format('HH:mm')
                 )
             );
         }
