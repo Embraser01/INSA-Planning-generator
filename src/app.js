@@ -1,5 +1,5 @@
 /*
- INSA-Planning-generator  Copyright (C) 2016  Marc-Antoine FERNANDES
+ INSA-Planning-generator  Copyright (C) 2017  Marc-Antoine FERNANDES
  This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
  This is free software, and you are welcome to redistribute it
  under certain conditions; type `show c' for details.
@@ -17,6 +17,7 @@ let jsdom = require('jsdom');
 let request = require('request').defaults({jar: true});
 let moment = require('moment');
 let express = require('express');
+let path = require('path');
 let Feed = require('feed');
 
 let utils = require('./utils');
@@ -26,13 +27,14 @@ let app = express();
 
 // App Specific
 
-const INTERVAL = 6;
+const INTERVAL = 1;
 const PORT = 8003;
 const MAX_DAYS_TO_NOTIFY = 15;
+const MAX_FEED_SIZE = 30;
 const YEAR = 2016;
 const FILE_NAME = 'edt_grp%d.ics';
-const EXPORT_FOLDER = '../export/';
-const CONFIG = JSON.parse(fs.readFileSync('../config.json'));
+const EXPORT_FOLDER = path.normalize(__dirname + '/../export/');
+const CONFIG = JSON.parse(fs.readFileSync('./config.json'));
 
 
 // INSA Connection Specific
@@ -68,9 +70,26 @@ let feeds = {};
 // Init feeds & planning
 for (let if_year in IF_SECTION) {
     feeds[if_year] = {};
+    cache[if_year] = {};
     planning[if_year] = {};
     for (let grp of IF_SECTION[if_year]) {
-        feeds[if_year][grp] = "";
+
+        let feed = new Feed({
+            title: utils.node.format('Emploi du temps %dIF-Grp.%d', if_year, grp),
+            description: utils.node.format('Feed permettant de notifier des changements d\'emploi du temps sur les %d prochains jours', MAX_DAYS_TO_NOTIFY),
+            link: 'https://github.com/Embraser01/INSA-Planning-generator',
+            copyright: 'Copyright (C) 2017 Marc-Antoine FERNANDES',
+            author: {
+                name: 'Marc-Antoine Fernandes',
+                email: 'embraser01@gmail.com',
+                link: 'https://github.com/Embraser01'
+            }
+        });
+
+        feeds[if_year][grp] = {
+            obj: feed,
+            raw: feed.render('rss-2.0')
+        };
     }
 }
 
@@ -89,7 +108,9 @@ function getEvent(event) {
 
     let detailsElement = event.childNodes[0].childNodes[0].childNodes[1];
 
-    let start_group = Number(REGEX_CLASSNAME.exec(event.parentNode.className)[0]);
+    let start_group = Number(REGEX_CLASSNAME.exec(event.parentNode.className)[1]);
+    if (!start_group) return;
+
     let end_group = start_group + Number(event.rowSpan);
 
     let padding = 0; // Padding des marges de chaque heure
@@ -162,7 +183,11 @@ function exportCalendar(grp_planning_obj, if_year, grp_num) {
 
     let exportData = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//lol/mdr//c_pa_fo//Marc-Antoine F. Exporter v1.0//FR\n';
 
-    for (let event in grp_planning_obj) {
+    let event;
+
+    for (let key in grp_planning_obj) {
+
+        event = grp_planning_obj[key];
 
         exportData += 'BEGIN:VEVENT\n';
         exportData += 'DTSTART:' + utils.getVCalDate(event.start) + '\n';
@@ -182,11 +207,15 @@ function exportCalendar(grp_planning_obj, if_year, grp_num) {
 }
 
 
-function compare(cache, planning) {
-    if (!cache || cache.length === 0) return [];
+/**
+ * Compare deux planning et renvoie des messages détaillés
+ * @param old {Object} Ancien planning
+ * @param recent {Object} Nouveau planning
+ * @returns {Array} Messages détaillés
+ */
+function compare(old, recent) {
+    if (!old || !recent) return [];
 
-    let iCache = 0;
-    let iPlanning = 0;
 
     let now = new Date();
     let max = new Date();
@@ -194,45 +223,119 @@ function compare(cache, planning) {
 
     let messages = [];
 
-    while (iCache < cache.length && cache[iCache].start < now) iCache++;
-    while (iPlanning < planning.length && planning[iPlanning].start < now) iPlanning++;
 
-    while (iPlanning < planning.length) {
-        // Check only until MAX DAY TO NOTIFY
-        if (planning[iPlanning].start > max) break;
+    let keysOld = Object.keys(old);
+    let keysRecent = Object.keys(recent);
+
+    let keys = keysOld.concat(keysRecent.filter(item => keysOld.indexOf(item) < 0));
+
+    let oldEvent;
+    let recentEvent;
+
+    for (let key of keys) {
+        if (key < now.getTime()) continue;
+        if (key > max.getTime()) break;
+
+        oldEvent = old[key];
+        recentEvent = recent[key];
+
+        // Si ajouter
+
+        if (!oldEvent) {
+            messages.push(
+                utils.node.format("Le cours [%s] du %s a été ajouté ",
+                    recentEvent.title,
+                    moment(recentEvent.start).format('DD/MM HH:MM')
+                )
+            );
+        }
+
+        // Si enlevé
+
+        if (!recentEvent) {
+            messages.push(
+                utils.node.format("Le cours [%s] du %s a été supprimé ou déplacé",
+                    oldEvent.title,
+                    moment(oldEvent.start).format('DD/MM HH:MM')
+                )
+            );
+        }
 
 
-        // Suppression
-        if (planning[iPlanning].start >= cache[iCache].end) {
-            messages.push("Le cours suivant du " + moment(cache[iCache].start).format('DD/MM HH:MM') + " a été supprimé ou déplacé : " + cache[iCache].title);
-            iCache++;
+        // Si remplacé
+
+        if (oldEvent.title !== recentEvent.title) {
+            messages.push(
+                utils.node.format("Le cours [%s] du %s a été remplacé par [%s]",
+                    oldEvent.title,
+                    moment(oldEvent.start).format('DD/MM HH:MM'),
+                    recentEvent.title
+                )
+            );
+        }
 
 
-            // Remplacer
-        } else if (planning[iPlanning].start === cache[iCache].start && planning[iPlanning].title !== cache[iCache].title) {
-            messages.push("Le cours suivant du " + moment(cache[iCache].start).format('DD/MM HH:MM') + " a été remplacé : " + cache[iCache].title);
-            iPlanning++;
-            iCache++;
+        // Si durée modifiée
 
+        if (oldEvent.end !== recentEvent.end) {
+            messages.push(
+                utils.node.format("Le cours [%s] du %s finira à %s au lieu de %s",
+                    recentEvent.title,
+                    moment(oldEvent.start).format('DD/MM HH:MM'),
+                    moment(recentEvent.end).format('HH:MM'),
+                    moment(oldEvent.end).format('HH:MM')
+                )
+            );
+        }
 
-            // Ajouter
-        } else if (planning[iPlanning].end <= cache[iCache].start) {
-            messages.push("Le cours suivant du " + moment(planning[iPlanning].start).format('DD/MM HH:MM') + " a été ajouté : " + planning[iPlanning].title);
-            iPlanning++;
+        // Si salle modifiée
 
+        if (oldEvent.location !== recentEvent.location) {
+            messages.push(
+                utils.node.format("Changement de salle pour le cours [%s] du %s, salle : %s",
+                    recentEvent.title,
+                    moment(oldEvent.start).format('DD/MM HH:MM'),
+                    recentEvent.location
+                )
+            );
+        }
 
-            // Modifier
-        } else if (planning[iPlanning].start === cache[iCache].start
-            && planning[iPlanning].title === cache[iCache].title
-            && (planning[iPlanning].location !== cache[iCache].location || planning[iPlanning].end !== cache[iCache].end)
-        ) {
-            messages.push("Le cours suivant du " + moment(cache[iCache].start).format('DD/MM HH:MM') + " a été modifié : " + planning[iPlanning].title);
-            iPlanning++;
-            iCache++;
+        // Si prof modifiée
+
+        if (oldEvent.description !== recentEvent.description) {
+            messages.push(
+                utils.node.format("Changement d'intervenant(s) pour le cours [%s] du %s, intervenant(s) : %s",
+                    recentEvent.title,
+                    moment(oldEvent.start).format('DD/MM HH:MM'),
+                    recentEvent.description
+                )
+            );
         }
     }
 
     return messages;
+}
+
+
+function updateRSSFeed(if_year, grp) {
+    let messages = compare(cache[if_year][grp], planning[if_year][grp]);
+    let feedObj = feeds[if_year][grp].obj;
+    let now = new Date();
+
+    // Prevent from overflow
+    if (feedObj.items.length > MAX_FEED_SIZE) {
+        feedObj.items.splice(0, feedObj.items.length - MAX_FEED_SIZE);
+    }
+
+
+    for (let message of messages) {
+        feedObj.addItem({
+            title: message,
+            date: now
+        });
+    }
+
+    feeds[if_year][grp].raw = feedObj.render('rss-2.0');
 }
 
 
@@ -286,16 +389,14 @@ function parse(data, if_year) {
         for (grp of IF_SECTION[if_year]) {
             error = exportCalendar(planning[if_year][grp], if_year, grp);
 
+            updateRSSFeed(if_year, grp);
+
             if (error) console.log("Erreur lors de l'enregistrement du planning %dIF-GRP%d :", if_year, grp, error);
         }
 
-        // On check si des evenenement on changés
-
-        //TODO Detect event change
-
-
-        // On enregistre dans un cache le planning
-        cache[if_year] = planning;
+        // On bouge le planning dans le cache
+        cache[if_year] = planning[if_year];
+        planning[if_year] = {};
     });
 }
 
@@ -363,12 +464,29 @@ update();
 //===============//
 
 
-app.get('/export/:num_year/:num_group', function (req, res, next) {
+app.get('/export/:num_year(\\d+)/:num_group(\\d+)', function (req, res, next) {
+
+    let num_year = Number(req.params.num_year);
+    let num_group = Number(req.params.num_group);
 
     // Si le groupe et l'année existent
-    if (IF_SECTION[req.params.num_year] && IF_SECTION[req.params.num_year][req.params.num_group]) {
+    if (IF_SECTION[num_year] && IF_SECTION[num_year][num_group - IF_SECTION[num_year][0]]) {
 
-        return res.sendFile((EXPORT_FOLDER + req.params.num_year + '/' + utils.node.format(FILE_NAME, req.params.num_group)));
+        return res.sendFile(EXPORT_FOLDER + num_year + '/' + utils.node.format(FILE_NAME, num_group));
+    }
+
+    next();
+});
+
+app.get('/rss/:num_year(\\d+)/:num_group(\\d+)', function (req, res, next) {
+
+    let num_year = Number(req.params.num_year);
+    let num_group = Number(req.params.num_group);
+
+    // Si le groupe et l'année existent
+    if (IF_SECTION[num_year] && IF_SECTION[num_year][num_group - IF_SECTION[num_year][0]]) {
+
+        return res.send(feeds[num_year][num_group].raw);
     }
 
     next();

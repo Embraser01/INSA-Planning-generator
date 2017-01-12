@@ -69,4 +69,4 @@ screen -dmS calendrier_insa npm start
 
 ## Licence
 
-[Copyright (C) 2016  Marc-Antoine FERNANDES](https://github.com/Embraser01/INSA-Planning-generator/blob/master/LICENSE.md)
+[Copyright (C) 2017  Marc-Antoine FERNANDES](https://github.com/Embraser01/INSA-Planning-generator/blob/master/LICENSE.md)
