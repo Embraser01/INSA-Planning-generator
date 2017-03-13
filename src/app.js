@@ -266,6 +266,7 @@ function compare(old, recent) {
             );
         }
 
+        if (!recentEvent || !oldEvent) continue;
 
         // Si remplacé
 
@@ -417,7 +418,7 @@ function update() {
      On récupère la page de login pour récupérer les letiables "execution" & "lt" (sécurité)
      */
     jsdom.env(LOGIN_LINK, [], function (err, window) {
-            if (err) return console.log(err);
+            if (err) return console.log("Erreur lors du polling(1) :", err);
 
             execution = window.document.querySelectorAll('input[name="execution"]')[0].value;
             lt = window.document.querySelectorAll('input[name="lt"]')[0].value;
@@ -435,7 +436,7 @@ function update() {
                 },
                 headers: DEFAULT_HEADERS
             }, function (err) {
-                if (err) return console.log(err);
+                if (err) return console.log("Erreur lors du polling(2) :", err);
 
                 /**
                  * Fonction pour faire la requête vers l'emploi du temps en fonction de l'année
@@ -446,7 +447,7 @@ function update() {
                         url: EDT_LINK.replace(YEAR_VAR, '' + if_year),
                         headers: DEFAULT_HEADERS
                     }, function (err, res, body) {
-                        if (err) return console.log(err);
+                        if (err) return console.log("Erreur lors du polling(3) :", err);
                         parse(body, if_year);
                     });
                 }
