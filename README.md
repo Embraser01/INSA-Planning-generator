@@ -2,13 +2,13 @@
 
 ## Presentation
 
-  Serveur NodeJS qui génère les emplois du temps du département INFO de l'INSA Lyon sous la forme de fichier .ics, compatible avec la majorité des calendrier.
+  Serveur NodeJS qui génère les emplois du temps du département INFO de l'INSA Lyon sous la forme de fichier .ics, compatible avec la majorité des calendriers.
   
-  L'application actualise l'ensemble des emplois du temps toutes les 6 heures.
+  L'application actualise l'ensemble des emplois du temps toutes les heures.
 
 ## Utilisation avec Google calendar
 
-L'application est totalement compatible avec Google calendar (avec les mises à jours).
+L'application est totalement compatible avec Google calendar (mis à jour tous les jours).
 Pour avoir le calendrier sur Google :
 
 - Aller sur [Google calendar](https://calendar.google.com)
