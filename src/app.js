@@ -248,10 +248,13 @@ function compare(old, recent) {
 
         if (!oldEvent) {
             messages.push(
-                utils.node.format("Le cours [%s] du %s a été ajouté ",
-                    recentEvent.title,
-                    moment(recentEvent.start).format(FEED_DATE_FORMAT)
-                )
+                {
+                    title: 'Un cours a été ajouté',
+                    description: utils.node.format("Le cours [%s] du %s a été ajouté",
+                        recentEvent.title,
+                        moment(recentEvent.start).format(FEED_DATE_FORMAT)
+                    )
+                }
             );
         }
 
@@ -259,10 +262,13 @@ function compare(old, recent) {
 
         if (!recentEvent) {
             messages.push(
-                utils.node.format("Le cours [%s] du %s a été supprimé ou déplacé",
-                    oldEvent.title,
-                    moment(oldEvent.start).format(FEED_DATE_FORMAT)
-                )
+                {
+                    title: 'Un cours a été supprimé ou déplacé',
+                    description: utils.node.format("Le cours [%s] du %s a été supprimé ou déplacé",
+                        oldEvent.title,
+                        moment(oldEvent.start).format(FEED_DATE_FORMAT)
+                    )
+                }
             );
         }
 
@@ -272,11 +278,14 @@ function compare(old, recent) {
 
         if (oldEvent.title !== recentEvent.title) {
             messages.push(
-                utils.node.format("Le cours [%s] du %s a été remplacé par [%s]",
-                    oldEvent.title,
-                    moment(oldEvent.start).format(FEED_DATE_FORMAT),
-                    recentEvent.title
-                )
+                {
+                    title: 'Un cours a été remplacé',
+                    description: utils.node.format("Le cours [%s] du %s a été remplacé par [%s]",
+                        oldEvent.title,
+                        moment(oldEvent.start).format(FEED_DATE_FORMAT),
+                        recentEvent.title
+                    )
+                }
             );
         }
 
@@ -285,12 +294,15 @@ function compare(old, recent) {
 
         if (oldEvent.end.getTime() !== recentEvent.end.getTime()) {
             messages.push(
-                utils.node.format("Le cours [%s] du %s finira à %s au lieu de %s",
-                    recentEvent.title,
-                    moment(oldEvent.start).format(FEED_DATE_FORMAT),
-                    moment(recentEvent.end).format('HH:mm'),
-                    moment(oldEvent.end).format('HH:mm')
-                )
+                {
+                    title: 'Un cours a été alongé',
+                    description: utils.node.format("Le cours [%s] du %s finira à %s au lieu de %s",
+                        recentEvent.title,
+                        moment(oldEvent.start).format(FEED_DATE_FORMAT),
+                        moment(recentEvent.end).format('HH:mm'),
+                        moment(oldEvent.end).format('HH:mm')
+                    )
+                }
             );
         }
 
@@ -298,11 +310,14 @@ function compare(old, recent) {
 
         if (oldEvent.location !== recentEvent.location) {
             messages.push(
-                utils.node.format("Changement de salle pour le cours [%s] du %s, salle : %s",
-                    recentEvent.title,
-                    moment(oldEvent.start).format(FEED_DATE_FORMAT),
-                    recentEvent.location
-                )
+                {
+                    title: 'Changement de salle',
+                    description: utils.node.format("Changement de salle pour le cours [%s] du %s, nouvelle salle : %s",
+                        recentEvent.title,
+                        moment(oldEvent.start).format(FEED_DATE_FORMAT),
+                        recentEvent.location
+                    )
+                }
             );
         }
 
@@ -310,11 +325,14 @@ function compare(old, recent) {
 
         if (oldEvent.description !== recentEvent.description) {
             messages.push(
-                utils.node.format("Changement d'intervenant(s) pour le cours [%s] du %s, intervenant(s) : %s",
-                    recentEvent.title,
-                    moment(oldEvent.start).format(FEED_DATE_FORMAT),
-                    recentEvent.description
-                )
+                {
+                    title: 'Changement d\'intervenant(s)',
+                    description: utils.node.format("Changement d'intervenant(s) pour le cours [%s] du %s, intervenant(s) : %s",
+                        recentEvent.title,
+                        moment(oldEvent.start).format(FEED_DATE_FORMAT),
+                        recentEvent.description
+                    )
+                }
             );
         }
     }
@@ -336,7 +354,8 @@ function updateRSSFeed(if_year, grp) {
 
     for (let message of messages) {
         feedObj.addItem({
-            title: message,
+            title: message.title,
+            description: message.description,
             date: now
         });
     }
