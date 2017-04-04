@@ -1,5 +1,9 @@
 # INSA-Planning-generator
 
+[![license](https://img.shields.io/github/license/embraser01/INSA-Planning-generator.svg)](./LICENSE.md)
+[![dependencies Status](https://david-dm.org/embraser01/INSA-Planning-generator/status.svg)](https://david-dm.org/embraser01/INSA-Planning-generator)
+[![devDependencies Status](https://david-dm.org/embraser01/INSA-Planning-generator/dev-status.svg)](https://david-dm.org/embraser01/INSA-Planning-generator?type=dev)
+
 ## Presentation
 
   Serveur NodeJS qui génère les emplois du temps du département INFO de l'INSA Lyon sous la forme de fichier .ics, compatible avec la majorité des calendriers.
