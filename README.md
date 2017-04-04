@@ -1,4 +1,4 @@
-# INSA-Planning-generator
+# Générateur d'emplois du temps - INSA Lyon
 
 [![license](https://img.shields.io/github/license/embraser01/INSA-Planning-generator.svg)](./LICENSE.md)
 [![dependencies Status](https://david-dm.org/embraser01/INSA-Planning-generator/status.svg)](https://david-dm.org/embraser01/INSA-Planning-generator)
@@ -73,4 +73,4 @@ screen -dmS calendrier_insa npm start
 
 ## Licence
 
-[Copyright (C) 2017  Marc-Antoine FERNANDES](https://github.com/Embraser01/INSA-Planning-generator/blob/master/LICENSE.md)
+[Copyright (C) 2017  Marc-Antoine FERNANDES](./LICENSE.md)
