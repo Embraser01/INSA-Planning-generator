@@ -18,7 +18,7 @@ Pour avoir le calendrier sur Google :
 - Aller sur [Google calendar](https://calendar.google.com)
 - Dans le panel à gauche, cliquer sur les 3 points au niveau de "Autres agendas"
 - "Ajouter par URL"
-- Rentrer l'adresse : http://calendar.example.com/export/:année/:groupe (remplacer :année et :groupe par les valeurs voulues)
+- Rentrer l'adresse : http://calendar.example.com/export/:année/:groupe (remplacer :année et :groupe par les valeurs voulues et `calendar.example.com` par le lien du serveur utilisé)
 
 ## Mise en ligne
 
