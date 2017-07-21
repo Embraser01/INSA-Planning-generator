@@ -18,7 +18,14 @@ Pour avoir le calendrier sur Google :
 - Aller sur [Google calendar](https://calendar.google.com)
 - Dans le panel à gauche, cliquer sur les 3 points au niveau de "Autres agendas"
 - "Ajouter par URL"
-- Rentrer l'adresse : http://calendar.example.com/export/:année/:groupe (remplacer :année et :groupe par les valeurs voulues et `calendar.example.com` par le lien du serveur utilisé)
+- Rentrer l'adresse : https://calendar.example.com/export/:année/:groupe (remplacer :année et :groupe par les valeurs voulues et `calendar.example.com` par le lien du serveur utilisé)
+
+N.B. : Si le serveur est éteint, l'emploi du temps restera visible mais ne sera plus mis à jour.
+
+## Serveur de demo
+
+Un serveur est actuellement en route sur cete adresse : `https://calendar.insa.finch4.xyz/`.
+Il n'y a aucune garantie que le serveur fonctionne en permanence !
 
 ## Mise en ligne
 
