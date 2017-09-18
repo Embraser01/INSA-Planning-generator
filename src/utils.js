@@ -19,11 +19,12 @@ module.exports = {
 
     /**
      * Renvoi la date en fonction du numero de la semaine et de l'année (http://stackoverflow.com/a/16591175/5285167)
-     * @param w semaine
      * @param y année
+     * @param w semaine
+     * @param d jour de la semaine
      * @returns {Date} date en fonction de l'année et de la semaine
      */
-    getDateOfISOWeek: function (w, y) {
+    getDateOfISOWeek: function (y, w, d) {
         let simple = new Date(y, 0, 1 + (w - 1) * 7);
         let dow = simple.getDay();
         let ISOweekStart = simple;
@@ -31,6 +32,7 @@ module.exports = {
             ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
         else
             ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+
         return ISOweekStart;
     },
 

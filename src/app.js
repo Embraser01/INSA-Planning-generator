@@ -12,18 +12,17 @@
 
 // Modules
 
-let fs = require('fs');
-let jsdom = require('jsdom');
-let request = require('request').defaults({jar: true});
-let moment = require('moment');
-let express = require('express');
-let path = require('path');
-let Feed = require('feed');
+const fs = require('fs');
+const cheerio = require('cheerio');
+const request = require('request-promise-native').defaults({jar: true});
+const moment = require('moment');
+const express = require('express');
+const path = require('path');
+const Feed = require('feed');
 
-let utils = require('./utils');
+const utils = require('./utils');
 
-let app = express();
-
+const app = express();
 
 // App Specific
 
@@ -47,18 +46,19 @@ const DEFAULT_HEADERS = {
 
 // INSA EDT IF Specific
 
-const EVENT_SELECTOR = 'td[id^=slot]';
+const EVENT_SELECTOR = 'td[id|=slot]';
 const YEAR_VAR = '$if_year';
-const EDT_LINK = 'https://servif-cocktail.insa-lyon.fr/EdT/' + YEAR_VAR + 'IF.php';
+const EDT_LINK = `https://servif-cocktail.insa-lyon.fr/EdT/${YEAR_VAR}IF.php`;
 const MIDDLE_WEEK = 30;
 const REGEX_DATE = /S(\d+)-J(\d)/;
 const REGEX_CLASSNAME = /row-group-(\d+)/;
+const REGEX_TIME_LOCATION = /(\d{2})h(\d{2})(\s@\s(?!-)(.*))?/;
 const NB_MIN_PER_SPAN = 15;
 
 const IF_SECTION = {
     3: [1, 2, 3, 4],
     4: [1, 2, 3, 4],
-    5: [1, 2, 3, 4]
+    5: [1, 2, 3, 4, 5]
 };
 
 
@@ -76,8 +76,8 @@ for (let if_year in IF_SECTION) {
     for (let grp of IF_SECTION[if_year]) {
 
         let feed = new Feed({
-            title: utils.node.format('Emploi du temps %dIF-Grp.%d', if_year, grp),
-            description: utils.node.format('Feed permettant de notifier des changements d\'emploi du temps sur les %d prochains jours', MAX_DAYS_TO_NOTIFY),
+            title: `Emploi du temps ${if_year}IF-Grp.${grp}`,
+            description: `Feed permettant de notifier des changements d'emploi du temps sur les ${MAX_DAYS_TO_NOTIFY} prochains jours`,
             link: 'https://github.com/Embraser01/INSA-Planning-generator',
             copyright: 'Copyright (C) 2017 Marc-Antoine FERNANDES',
             author: {
@@ -89,7 +89,7 @@ for (let if_year in IF_SECTION) {
 
         feeds[if_year][grp] = {
             obj: feed,
-            raw: feed.render('rss-2.0')
+            raw: feed.rss2()
         };
     }
 }
@@ -102,38 +102,45 @@ for (let if_year in IF_SECTION) {
 
 /**
  * Rajoute un évenement à un tableau
+ * @param $ Cheerio instance
  * @param event {Object} Evenement en version HTML
  */
-function getEvent(event) {
-    let i;
+function getEvent($, event) {
+    //
+    // Informations sur l'évenement
+    //
+    const details = $('tr', event).last().children();
+    const title = $('tr', event).first().text();
+    const description = details.last().text();
+    const [, hour, minutes, , location] = REGEX_TIME_LOCATION.exec(details.first().text());
 
-    let detailsElement = event.childNodes[0].childNodes[0].childNodes[1];
+    //
+    // Groupes concernés
+    //
+    const start_group = +REGEX_CLASSNAME.exec($(event).parent().attr('class'))[1];
+    const end_group = start_group + +$(event).attr('rowspan');
+    const groups = Array.from({length: end_group - start_group}, (v, k) => k + start_group);
 
-    let start_group = Number(REGEX_CLASSNAME.exec(event.parentNode.className)[1]);
-    if (!start_group) return;
+    //
+    // Date de l'évenement
+    //
+    const [, week_num, day_num] = REGEX_DATE.exec($(event).attr('id'));
+    const year = week_num > MIDDLE_WEEK ? YEAR : YEAR + 1; // Choix de l'année en fonction du numéro de semaine
 
-    let end_group = start_group + Number(event.rowSpan);
+    let nb_min = +hour * 60 + +minutes;
 
-    let padding = 0; // Padding des marges de chaque heure
-    let day_num = Number(REGEX_DATE.exec(event.id)[2]);
-    let week_num = Number(REGEX_DATE.exec(event.id)[1]);
-    let year = week_num > MIDDLE_WEEK ? YEAR : YEAR + 1; // Choix de l'année en fonction du numéro de semaine
+    const start = moment({year}).add({
+        w: week_num - 1, // Date is already initialized at the first week
+        d: day_num,
+        m: nb_min,
+    }).toDate();
 
-    // Nombre de minute depuis le début de la journée
-    let nb_min = Number(detailsElement.childNodes[0].innerHTML.substr(0, 2)) * 60
-        + Number(detailsElement.childNodes[0].innerHTML.substr(3, 2));
+    // On enlève les marges invisibles
 
+    const colSpan = +$(event).attr('colspan');
 
-    // Date du début du cours
-    let start = utils.getDateOfISOWeek(week_num, year);
-    start.setDate(start.getDate() + day_num - 1);
-    start.setMinutes(nb_min);
-    start.setSeconds(0);
-    start.setMilliseconds(0);
-
-
-    // Boucle pour prendre en compte les marges non affichées
-    for (i = event.colSpan - 1; i > 0; i--) {
+    let padding = 0;
+    for (let i = colSpan - 1; i > 0; i--) {
         nb_min += NB_MIN_PER_SPAN;
         if (nb_min % 60 === 0) {
             padding--;
@@ -141,30 +148,12 @@ function getEvent(event) {
         }
     }
 
+    const end = moment(start).add({
+        m: NB_MIN_PER_SPAN * (colSpan + padding)
+    }).toDate();
 
-    // Date de fin de cours
-    let end = new Date(start.getTime());
-    end.setMinutes(end.getMinutes() + NB_MIN_PER_SPAN * (Number(event.colSpan) + padding));
-    end.setSeconds(0);
-    end.setMilliseconds(0);
-
-
-    // On recuppère les groupes affectés
-
-    let groups = [];
-
-    for (i = start_group; i < end_group; i++) groups.push(i);
-
-
-    // On renvoie un evennement propre
-    return {
-        start: start,
-        end: end,
-        title: utils.normalize(event.childNodes[0].childNodes[0].childNodes[0].childNodes[0].innerHTML),
-        description: utils.normalize(detailsElement.childNodes[1].innerHTML),
-        location: utils.normalize(detailsElement.childNodes[0].innerHTML.slice(6, -1).replace('@', '')),
-        groups: groups
-    };
+    // On renvoie un evenement propre
+    return {start, end, title, description, location, groups};
 }
 
 /**
@@ -195,11 +184,11 @@ function exportCalendar(grp_planning_obj, if_year, grp_num) {
         event = grp_planning_obj[key];
 
         exportData += 'BEGIN:VEVENT\n';
-        exportData += 'DTSTART:' + utils.getVCalDate(event.start) + '\n';
-        exportData += 'DTEND:' + utils.getVCalDate(event.end) + '\n';
-        exportData += 'SUMMARY:' + event.title + '\n';
-        exportData += 'LOCATION:' + event.location + '\n';
-        exportData += 'DESCRIPTION:' + event.description + ' (exporté le ' + moment().format('DD/MM/YYYY') + ')\n'; // Nom du prof
+        exportData += `DTSTART:${utils.getVCalDate(event.start)}\n`;
+        exportData += `DTEND:${utils.getVCalDate(event.end)}\n`;
+        exportData += `SUMMARY:${event.title}\n`;
+        if (event.location) exportData += `LOCATION:${event.location}\n`;
+        exportData += `DESCRIPTION:${event.description} (exporté le ${moment().format('DD/MM/YYYY')})\n`; // Nom du prof
         exportData += 'END:VEVENT\n';
     }
 
@@ -360,69 +349,58 @@ function updateRSSFeed(if_year, grp) {
         });
     }
 
-    feeds[if_year][grp].raw = feedObj.render('rss-2.0');
+    feeds[if_year][grp].raw = feedObj.rss2();
 }
 
 
 /**
  * Parse le document HTML pour récupérer à la fin un .ics
- * @param data {String} fichier html
+ * @param $ Cheerio instance
  * @param if_year {Number} Numéro de l'année
  */
-function parse(data, if_year) {
-    let grp, event;
+function parse($, if_year) {
 
     /*
-     * On instancie une fenêtre JSDOM
+     On initialise les plannings de if_year
      */
-    jsdom.env(data, [], function (err, window) {
-        if (err) throw err;
 
-        let document = window.document;
+    for (const grp of IF_SECTION[if_year]) {
+        planning[if_year][grp] = {};
+    }
 
-        /*
-         On initialise les plannings de if_year
-         */
+    /*
+     On récupère tous les evenements et on les transforme en objet qu'on enregistre
+     */
 
-        for (grp of IF_SECTION[if_year]) {
-            planning[if_year][grp] = {};
+    $(EVENT_SELECTOR).each((i, event) => {
+        const eventObject = getEvent($, event);
+
+        if (!eventObject) return;
+
+        for (const grp of eventObject.groups) {
+            planning[if_year][grp][eventObject.start.getTime()] = eventObject;
         }
-
-        /*
-         On récupère tous les evenements (querySelectorAll) et on les transforme en objet qu'on enregistre
-         */
-
-        let events = document.querySelectorAll(EVENT_SELECTOR);
-        let eventObject;
-
-        for (event of events) {
-            eventObject = getEvent(event);
-
-            if (eventObject) {
-                for (grp of eventObject.groups) {
-                    planning[if_year][grp][eventObject.start.getTime()] = eventObject;
-                }
-            }
-        }
-
-
-        /*
-         Maintenant, on peut exporté le planning pour chaque groupe
-         */
-
-        let error;
-        for (grp of IF_SECTION[if_year]) {
-            error = exportCalendar(planning[if_year][grp], if_year, grp);
-
-            updateRSSFeed(if_year, grp);
-
-            if (error) console.log("Erreur lors de l'enregistrement du planning %dIF-GRP%d :", if_year, grp, error);
-        }
-
-        // On bouge le planning dans le cache
-        cache[if_year] = planning[if_year];
-        planning[if_year] = {};
     });
+
+
+    /*
+     Maintenant, on peut exporté le planning pour chaque groupe
+     */
+
+    let error;
+    for (const grp of IF_SECTION[if_year]) {
+        error = exportCalendar(planning[if_year][grp], if_year, grp);
+
+        updateRSSFeed(if_year, grp);
+
+        if (error) console.log("Erreur lors de l'enregistrement du planning %dIF-GRP%d :", if_year, grp, error);
+    }
+
+    // On bouge le planning dans le cache
+    cache[if_year] = planning[if_year];
+    planning[if_year] = {};
+
+    console.log(`Planning des ${if_year}IF générés !`);
 }
 
 /**
@@ -434,48 +412,44 @@ function update() {
     let lt = '';
 
     /*
-     On récupère la page de login pour récupérer les letiables "execution" & "lt" (sécurité)
+     On récupère la page de login pour récupérer les variables "execution" & "lt" (sécurité)
      */
-    jsdom.env(LOGIN_LINK, [], function (err, window) {
-            if (err) return console.log("Erreur lors du polling(1) :", err);
+    request({
+        uri: LOGIN_LINK,
+        transform: body => cheerio.load(body) // Load DOM
+    }).then($ => {
+        execution = $('input[name="execution"]').val();
+        lt = $('input[name="lt"]').val();
 
-            execution = window.document.querySelectorAll('input[name="execution"]')[0].value;
-            lt = window.document.querySelectorAll('input[name="lt"]')[0].value;
+        /*
+         Maintenant on se connecte (représenté par le cookie "AGIMUS")
+         */
+        return request({
+            uri: LOGIN_LINK,
+            method: 'POST',
+            form: {
+                username: CONFIG.login,
+                password: utils.decrypt(CONFIG.password, CONFIG.KEY),
+                lt: lt,
+                execution: execution,
+                _eventId: 'submit'
+            },
+            headers: DEFAULT_HEADERS
+        });
+    }).then(() => {
 
-            /*
-             Maintenant on se connecte (représenté par le cookie "AGIMUS")
-             */
-            request.post(LOGIN_LINK, {
-                form: {
-                    username: CONFIG.login,
-                    password: utils.decrypt(CONFIG.password, CONFIG.KEY),
-                    lt: lt,
-                    execution: execution,
-                    _eventId: 'submit'
-                },
-                headers: DEFAULT_HEADERS
-            }, function (err) {
-                if (err) return console.log("Erreur lors du polling(2) :", err);
-
-                /**
-                 * Fonction pour faire la requête vers l'emploi du temps en fonction de l'année
-                 * @param if_year
-                 */
-                function responseParser(if_year) {
-                    request({
-                        url: EDT_LINK.replace(YEAR_VAR, '' + if_year),
-                        headers: DEFAULT_HEADERS
-                    }, function (err, res, body) {
-                        if (err) return console.log("Erreur lors du polling(3) :", err);
-                        parse(body, if_year);
-                    });
-                }
-
-                // Pour chaque années, on fabrique les calendriers de chaque groupes
-                for (let i in IF_SECTION) responseParser(i);
-            });
+        // Pour chaque années, on fabrique les calendriers de chaque groupes
+        for (let i in IF_SECTION) {
+            request({
+                uri: EDT_LINK.replace(YEAR_VAR, '' + i),
+                headers: DEFAULT_HEADERS,
+                transform: body => cheerio.load(body, {decodeEntities: true})
+            })
+                .then($ => parse($, i))
+                .catch(err => console.log("Erreur lors du polling(3) :", err));
         }
-    );
+
+    }).catch(err => console.log("Erreur lors du polling(1) :", err));
 }
 
 // On lance le système pour actualiser toutes les INTERVAL heures
