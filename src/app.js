@@ -52,7 +52,7 @@ const EDT_LINK = `https://servif-cocktail.insa-lyon.fr/EdT/${YEAR_VAR}IF.php`;
 const MIDDLE_WEEK = 30;
 const REGEX_DATE = /S(\d+)-J(\d)/;
 const REGEX_CLASSNAME = /row-group-(\d+)/;
-const REGEX_TIME_LOCATION = /(\d{0,2})h(\d{2})( @ (.*))?/;
+const REGEX_TIME_LOCATION = /(\d{2})h(\d{2})(\s@\s(?!-)(.*))?/;
 const NB_MIN_PER_SPAN = 15;
 
 const IF_SECTION = {
