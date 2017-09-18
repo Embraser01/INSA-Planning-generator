@@ -57,7 +57,7 @@ const NB_MIN_PER_SPAN = 15;
 const IF_SECTION = {
     3: [1, 2, 3, 4],
     4: [1, 2, 3, 4],
-    5: [1, 2, 3, 4]
+    5: [1, 2, 3, 4, 5]
 };
 
 
@@ -117,27 +117,29 @@ function getEvent($, event) {
     // Groupes concernés
     //
     const start_group = +REGEX_CLASSNAME.exec($(event).parent().attr('class'))[1];
-    const end_group = start_group + +event.rowSpan;
+    const end_group = start_group + +$(event).attr('rowspan');
     const groups = Array.from({ length: end_group - start_group }, (v, k) => k + start_group);
 
     //
     // Date de l'évenement
     //
-    const [, day_num, week_num] = REGEX_DATE.exec($(event).attr('id'));
+    const [, week_num, day_num] = REGEX_DATE.exec($(event).attr('id'));
     const year = week_num > MIDDLE_WEEK ? YEAR : YEAR + 1; // Choix de l'année en fonction du numéro de semaine
 
-    let nb_min = +time.substr(0, 2) + +time.substr(3, 5);
+    let nb_min = +time.substr(0, 2) * 60 + +time.substr(3, 5);
 
     const start = moment({ year }).add({
-        w: week_num,
+        w: week_num - 1, // Date is already initialized at the first week
         d: day_num,
         m: nb_min,
     }).toDate();
 
     // On enlève les marges invisibles
 
+    const colSpan = +$(event).attr('colspan');
+
     let padding = 0;
-    for (let i = event.colSpan - 1; i > 0; i--) {
+    for (let i = colSpan - 1; i > 0; i--) {
         nb_min += NB_MIN_PER_SPAN;
         if (nb_min % 60 === 0) {
             padding--;
@@ -146,7 +148,7 @@ function getEvent($, event) {
     }
 
     const end = moment(start).add({
-        m: NB_MIN_PER_SPAN * (+event.colSpan + padding)
+        m: NB_MIN_PER_SPAN * (colSpan + padding)
     }).toDate();
 
     // On renvoie un evenement propre
