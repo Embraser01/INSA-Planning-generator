@@ -1,20 +1,7 @@
 const moment = require('moment');
 
-const PlanningEvent = require('./models/event');
-
-
-// Base app configuration
-const YEAR = 2017;
-
-// INSA EDT IF Specific
-
-const MIDDLE_WEEK = 30;
-const NB_MIN_PER_SPAN = 15;
-
-// REGEXs & selectors
-const REGEX_DATE = /S(\d+)-J(\d)/;
-const REGEX_CLASSNAME = /row-group-(\d+)/;
-const REGEX_TIME_LOCATION = /(\d{2})h(\d{2})(\s@\s(?!-)(.*))?/;
+const { PlanningEvent, Planning } = require('./models/');
+const { YEAR, NB_MIN_PER_SPAN, EVENT_SELECTOR, IF_SECTION, REGEX_TIME_LOCATION, REGEX_CLASSNAME } = require('./constants');
 
 
 /**
@@ -29,7 +16,6 @@ function parseEvent($, event) {
     //
     // Informations sur l'évenement
     //
-
     const details = $('tr', event).last().children();
 
     event.title = $('tr', event).first().text();
@@ -46,17 +32,18 @@ function parseEvent($, event) {
     //
     // Date de l'évenement
     //
-    const [, hour, minutes, , location] = REGEX_TIME_LOCATION.exec(details.first().text());
+    const timeAndLocation = REGEX_TIME_LOCATION.exec(details.first().text());
     const [, week_num, day_num] = REGEX_DATE.exec($(event).attr('id'));
-    const year = week_num > MIDDLE_WEEK ? YEAR : YEAR + 1; // Choix de l'année en fonction du numéro de semaine
 
-    let nb_min = +hour * 60 + +minutes;
+    let nb_min = +timeAndLocation[1] * 60 + +timeAndLocation[2];
 
-    event.start = moment({ year }).add({
-        w: week_num - 1, // Date is already initialized at the first week
-        d: day_num,
-        m: nb_min,
-    }).toDate();
+    // On choisi l'année en fonction du numero de semaine
+    event.start = moment({ year: week_num > MIDDLE_WEEK ? YEAR : YEAR + 1 })
+        .add({
+            w: week_num - 1, // Date is already initialized at the first week
+            d: day_num,
+            m: nb_min,
+        }).toDate();
 
     // On enlève les marges invisibles
     const colSpan = +$(event).attr('colspan');
@@ -70,20 +57,29 @@ function parseEvent($, event) {
         }
     }
 
-    event.end = moment(event.start).add({
-        m: NB_MIN_PER_SPAN * (colSpan + padding)
-    }).toDate();
+    event.end = moment(event.start)
+        .add({
+            m: NB_MIN_PER_SPAN * (colSpan + padding)
+        }).toDate();
+
+    //
+    // Location de l'évenement
+    //
+    event.location = timeAndLocation[4];
 
     return event;
 }
 
 
 /**
- * Parse le document HTML pour récupérer à la fin un .ics
+ * Parse le document HTML pour générer une liste de planning
+ *
  * @param $ Cheerio instance
  * @param if_year {Number} Numéro de l'année
+ * @return {Array<Planning>} planning
  */
 function parseHTML($, if_year) {
+    const plannings = [];
 
     /*
      On initialise les plannings de if_year
@@ -128,4 +124,4 @@ function parseHTML($, if_year) {
     console.log(`Planning des ${if_year}IF générés !`);
 }
 
-module.exports = {};
+module.exports = { parseEvent, parseHTML };

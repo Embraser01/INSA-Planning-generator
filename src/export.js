@@ -1,0 +1,1 @@
+const ICS_DATE_FORMAT = 'YYYYMMDD[T]HHmmss[Z]';

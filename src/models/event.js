@@ -11,7 +11,7 @@ const ICS_DATE_FORMAT = 'YYYYMMDD[T]HHmmss[Z]';
  *
  * The event is based on an ICS event
  */
-module.exports = class PlanningEvent {
+exports.PlanningEvent = class {
 
     /**
      * When the event starts

@@ -3,7 +3,7 @@ const ICS_FILE_HEADER = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//INSA/Promo//201
 /**
  * Class representing an planning for a single group of a single year.
  */
-module.exports = class Planning {
+exports.Planning = class {
 
     /**
      * Group concerned by this planning
