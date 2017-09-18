@@ -14,46 +14,55 @@
 
 const fs = require('fs');
 const cheerio = require('cheerio');
-const request = require('request-promise-native').defaults({jar: true});
+const request = require('request-promise-native').defaults({ jar: true });
 const moment = require('moment');
 const express = require('express');
 const path = require('path');
 const Feed = require('feed');
+const util = require('util');
 
-const utils = require('./utils');
+// Application
+
+const passwordManager = require('./password-manager');
 
 const app = express();
 
-// App Specific
-
-const INTERVAL = 1;
-const PORT = 8003;
-const MAX_DAYS_TO_NOTIFY = 15;
-const MAX_FEED_SIZE = 30;
+// Base app configuration
 const YEAR = 2017;
-const FILE_NAME = 'edt_grp%d.ics';
-const FEED_DATE_FORMAT = 'DD/MM à HH:mm';
-const EXPORT_FOLDER = path.normalize(__dirname + '/../export/');
+const INTERVAL = 1; // In hours
+const PORT = 8003 || process.env.PORT;
 const CONFIG = JSON.parse(fs.readFileSync('./config.json'));
 
 
-// INSA Connection Specific
+// Export configuration
+const ICS_DATE_FORMAT = 'YYYYMMDD[T]HHmmss[Z]';
+const FILE_NAME = 'edt_grp%d.ics';
+const EXPORT_FOLDER = path.normalize(__dirname + '/../export/');
 
+// Feed configuration
+const MAX_DAYS_TO_NOTIFY = 15;
+const MAX_FEED_SIZE = 30;
+const FEED_DATE_FORMAT = 'DD/MM à HH:mm';
+
+// INSA Connection Specific
 const LOGIN_LINK = 'https://login.insa-lyon.fr/cas/login';
 const DEFAULT_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0'
 };
 
 // INSA EDT IF Specific
 
-const EVENT_SELECTOR = 'td[id|=slot]';
 const YEAR_VAR = '$if_year';
 const EDT_LINK = `https://servif-cocktail.insa-lyon.fr/EdT/${YEAR_VAR}IF.php`;
 const MIDDLE_WEEK = 30;
+const NB_MIN_PER_SPAN = 15;
+
+// REGEXs & selectors
+const EVENT_SELECTOR = 'td[id|=slot]';
 const REGEX_DATE = /S(\d+)-J(\d)/;
 const REGEX_CLASSNAME = /row-group-(\d+)/;
 const REGEX_TIME_LOCATION = /(\d{2})h(\d{2})(\s@\s(?!-)(.*))?/;
-const NB_MIN_PER_SPAN = 15;
+
 
 const IF_SECTION = {
     3: [1, 2, 3, 4],
@@ -101,62 +110,6 @@ for (let if_year in IF_SECTION) {
 
 
 /**
- * Rajoute un évenement à un tableau
- * @param $ Cheerio instance
- * @param event {Object} Evenement en version HTML
- */
-function getEvent($, event) {
-    //
-    // Informations sur l'évenement
-    //
-    const details = $('tr', event).last().children();
-    const title = $('tr', event).first().text();
-    const description = details.last().text();
-    const [, hour, minutes, , location] = REGEX_TIME_LOCATION.exec(details.first().text());
-
-    //
-    // Groupes concernés
-    //
-    const start_group = +REGEX_CLASSNAME.exec($(event).parent().attr('class'))[1];
-    const end_group = start_group + +$(event).attr('rowspan');
-    const groups = Array.from({length: end_group - start_group}, (v, k) => k + start_group);
-
-    //
-    // Date de l'évenement
-    //
-    const [, week_num, day_num] = REGEX_DATE.exec($(event).attr('id'));
-    const year = week_num > MIDDLE_WEEK ? YEAR : YEAR + 1; // Choix de l'année en fonction du numéro de semaine
-
-    let nb_min = +hour * 60 + +minutes;
-
-    const start = moment({year}).add({
-        w: week_num - 1, // Date is already initialized at the first week
-        d: day_num,
-        m: nb_min,
-    }).toDate();
-
-    // On enlève les marges invisibles
-
-    const colSpan = +$(event).attr('colspan');
-
-    let padding = 0;
-    for (let i = colSpan - 1; i > 0; i--) {
-        nb_min += NB_MIN_PER_SPAN;
-        if (nb_min % 60 === 0) {
-            padding--;
-            i--;
-        }
-    }
-
-    const end = moment(start).add({
-        m: NB_MIN_PER_SPAN * (colSpan + padding)
-    }).toDate();
-
-    // On renvoie un evenement propre
-    return {start, end, title, description, location, groups};
-}
-
-/**
  * Génère un fichier ics depuis un objet
  * @param grp_planning_obj {Object} objet (map) d'évenement
  * @param if_year {Number}
@@ -168,14 +121,14 @@ function exportCalendar(grp_planning_obj, if_year, grp_num) {
      On vérifie si un fichier existe déjà, si oui et que le planning est vide, on ne fait rien
      */
 
-    if (!grp_planning_obj && fs.existsSync(EXPORT_FOLDER + if_year + '/' + utils.node.format(FILE_NAME, grp_num))) return;
+    if (!grp_planning_obj && fs.existsSync(EXPORT_FOLDER + if_year + '/' + util.node.format(FILE_NAME, grp_num))) return;
 
 
     /*
      Maintenant on va créer un fichier iCal depuis le planning
      */
 
-    let exportData = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//lol/mdr//c_pa_fo//Marc-Antoine F. Exporter v1.0//FR\n';
+    let exportData = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//INSA/Promo//2019//Marc-Antoine F. Exporter v2.0//FR\n';
 
     let event;
 
@@ -184,8 +137,8 @@ function exportCalendar(grp_planning_obj, if_year, grp_num) {
         event = grp_planning_obj[key];
 
         exportData += 'BEGIN:VEVENT\n';
-        exportData += `DTSTART:${utils.getVCalDate(event.start)}\n`;
-        exportData += `DTEND:${utils.getVCalDate(event.end)}\n`;
+        exportData += `DTSTART:${moment(event.start).format(ICS_DATE_FORMAT)}\n`;
+        exportData += `DTEND:${moment(moment.start).format(ICS_DATE_FORMAT)}\n`;
         exportData += `SUMMARY:${event.title}\n`;
         if (event.location) exportData += `LOCATION:${event.location}\n`;
         exportData += `DESCRIPTION:${event.description} (exporté le ${moment().format('DD/MM/YYYY')})\n`; // Nom du prof
@@ -197,7 +150,7 @@ function exportCalendar(grp_planning_obj, if_year, grp_num) {
 
     if (!fs.existsSync(EXPORT_FOLDER + if_year)) fs.mkdirSync(EXPORT_FOLDER + if_year);
 
-    return fs.writeFileSync(EXPORT_FOLDER + if_year + '/' + utils.node.format(FILE_NAME, grp_num), exportData);
+    return fs.writeFileSync(EXPORT_FOLDER + if_year + '/' + util.node.format(FILE_NAME, grp_num), exportData);
 }
 
 
@@ -239,7 +192,7 @@ function compare(old, recent) {
             messages.push(
                 {
                     title: 'Un cours a été ajouté',
-                    description: utils.node.format("Le cours [%s] du %s a été ajouté",
+                    description: util.node.format("Le cours [%s] du %s a été ajouté",
                         recentEvent.title,
                         moment(recentEvent.start).format(FEED_DATE_FORMAT)
                     )
@@ -253,7 +206,7 @@ function compare(old, recent) {
             messages.push(
                 {
                     title: 'Un cours a été supprimé ou déplacé',
-                    description: utils.node.format("Le cours [%s] du %s a été supprimé ou déplacé",
+                    description: util.node.format("Le cours [%s] du %s a été supprimé ou déplacé",
                         oldEvent.title,
                         moment(oldEvent.start).format(FEED_DATE_FORMAT)
                     )
@@ -269,7 +222,7 @@ function compare(old, recent) {
             messages.push(
                 {
                     title: 'Un cours a été remplacé',
-                    description: utils.node.format("Le cours [%s] du %s a été remplacé par [%s]",
+                    description: util.node.format("Le cours [%s] du %s a été remplacé par [%s]",
                         oldEvent.title,
                         moment(oldEvent.start).format(FEED_DATE_FORMAT),
                         recentEvent.title
@@ -285,7 +238,7 @@ function compare(old, recent) {
             messages.push(
                 {
                     title: 'Un cours a été alongé',
-                    description: utils.node.format("Le cours [%s] du %s finira à %s au lieu de %s",
+                    description: util.node.format("Le cours [%s] du %s finira à %s au lieu de %s",
                         recentEvent.title,
                         moment(oldEvent.start).format(FEED_DATE_FORMAT),
                         moment(recentEvent.end).format('HH:mm'),
@@ -301,7 +254,7 @@ function compare(old, recent) {
             messages.push(
                 {
                     title: 'Changement de salle',
-                    description: utils.node.format("Changement de salle pour le cours [%s] du %s, nouvelle salle : %s",
+                    description: util.node.format("Changement de salle pour le cours [%s] du %s, nouvelle salle : %s",
                         recentEvent.title,
                         moment(oldEvent.start).format(FEED_DATE_FORMAT),
                         recentEvent.location
@@ -316,7 +269,7 @@ function compare(old, recent) {
             messages.push(
                 {
                     title: 'Changement d\'intervenant(s)',
-                    description: utils.node.format("Changement d'intervenant(s) pour le cours [%s] du %s, intervenant(s) : %s",
+                    description: util.node.format("Changement d'intervenant(s) pour le cours [%s] du %s, intervenant(s) : %s",
                         recentEvent.title,
                         moment(oldEvent.start).format(FEED_DATE_FORMAT),
                         recentEvent.description
@@ -429,7 +382,7 @@ function update() {
             method: 'POST',
             form: {
                 username: CONFIG.login,
-                password: utils.decrypt(CONFIG.password, CONFIG.KEY),
+                password: passwordManager.decrypt(CONFIG.password),
                 lt: lt,
                 execution: execution,
                 _eventId: 'submit'
@@ -443,7 +396,7 @@ function update() {
             request({
                 uri: EDT_LINK.replace(YEAR_VAR, '' + i),
                 headers: DEFAULT_HEADERS,
-                transform: body => cheerio.load(body, {decodeEntities: true})
+                transform: body => cheerio.load(body, { decodeEntities: true })
             })
                 .then($ => parse($, i))
                 .catch(err => console.log("Erreur lors du polling(3) :", err));
@@ -471,7 +424,7 @@ app.get('/export/:num_year(\\d+)/:num_group(\\d+)', function (req, res, next) {
     // Si le groupe et l'année existent
     if (IF_SECTION[num_year] && IF_SECTION[num_year][num_group - IF_SECTION[num_year][0]]) {
 
-        return res.sendFile(EXPORT_FOLDER + num_year + '/' + utils.node.format(FILE_NAME, num_group));
+        return res.sendFile(EXPORT_FOLDER + num_year + '/' + util.node.format(FILE_NAME, num_group));
     }
 
     next();

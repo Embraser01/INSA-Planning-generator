@@ -31,7 +31,7 @@ Il n'y a aucune garantie que le serveur fonctionne en permanence !
 
 ### Dépendance
 
--  [Node JS](https://nodejs.org) V6.7.0+
+-  [Node JS](https://nodejs.org) V8.3+
   
 
 ### Téléchargement et installation des dépendances
