@@ -14,7 +14,7 @@
 
 const fs = require('fs');
 const cheerio = require('cheerio');
-const request = require('request-promise-native').defaults({ jar: true });
+const request = require('request-promise-native').defaults({jar: true});
 const moment = require('moment');
 const express = require('express');
 const path = require('path');
@@ -48,7 +48,7 @@ const DEFAULT_HEADERS = {
 
 const EVENT_SELECTOR = 'td[id|=slot]';
 const YEAR_VAR = '$if_year';
-const EDT_LINK = 'https://servif-cocktail.insa-lyon.fr/EdT/' + YEAR_VAR + 'IF.php';
+const EDT_LINK = `https://servif-cocktail.insa-lyon.fr/EdT/${YEAR_VAR}IF.php`;
 const MIDDLE_WEEK = 30;
 const REGEX_DATE = /S(\d+)-J(\d)/;
 const REGEX_CLASSNAME = /row-group-(\d+)/;
@@ -76,8 +76,8 @@ for (let if_year in IF_SECTION) {
     for (let grp of IF_SECTION[if_year]) {
 
         let feed = new Feed({
-            title: utils.node.format('Emploi du temps %dIF-Grp.%d', if_year, grp),
-            description: utils.node.format('Feed permettant de notifier des changements d\'emploi du temps sur les %d prochains jours', MAX_DAYS_TO_NOTIFY),
+            title: `Emploi du temps ${if_year}IF-Grp.${grp}`,
+            description: `Feed permettant de notifier des changements d'emploi du temps sur les ${MAX_DAYS_TO_NOTIFY} prochains jours`,
             link: 'https://github.com/Embraser01/INSA-Planning-generator',
             copyright: 'Copyright (C) 2017 Marc-Antoine FERNANDES',
             author: {
@@ -119,7 +119,7 @@ function getEvent($, event) {
     //
     const start_group = +REGEX_CLASSNAME.exec($(event).parent().attr('class'))[1];
     const end_group = start_group + +$(event).attr('rowspan');
-    const groups = Array.from({ length: end_group - start_group }, (v, k) => k + start_group);
+    const groups = Array.from({length: end_group - start_group}, (v, k) => k + start_group);
 
     //
     // Date de l'évenement
@@ -127,9 +127,9 @@ function getEvent($, event) {
     const [, week_num, day_num] = REGEX_DATE.exec($(event).attr('id'));
     const year = week_num > MIDDLE_WEEK ? YEAR : YEAR + 1; // Choix de l'année en fonction du numéro de semaine
 
-    let nb_min = hour * 60 + minutes;
+    let nb_min = +hour * 60 + +minutes;
 
-    const start = moment({ year }).add({
+    const start = moment({year}).add({
         w: week_num - 1, // Date is already initialized at the first week
         d: day_num,
         m: nb_min,
@@ -153,7 +153,7 @@ function getEvent($, event) {
     }).toDate();
 
     // On renvoie un evenement propre
-    return { start, end, title, description, location, groups };
+    return {start, end, title, description, location, groups};
 }
 
 /**
@@ -184,11 +184,11 @@ function exportCalendar(grp_planning_obj, if_year, grp_num) {
         event = grp_planning_obj[key];
 
         exportData += 'BEGIN:VEVENT\n';
-        exportData += 'DTSTART:' + utils.getVCalDate(event.start) + '\n';
-        exportData += 'DTEND:' + utils.getVCalDate(event.end) + '\n';
-        exportData += 'SUMMARY:' + event.title + '\n';
-        if (event.location) exportData += 'LOCATION:' + event.location + '\n';
-        exportData += 'DESCRIPTION:' + event.description + ' (exporté le ' + moment().format('DD/MM/YYYY') + ')\n'; // Nom du prof
+        exportData += `DTSTART:${utils.getVCalDate(event.start)}\n`;
+        exportData += `DTEND:${utils.getVCalDate(event.end)}\n`;
+        exportData += `SUMMARY:${event.title}\n`;
+        if (event.location) exportData += `LOCATION:${event.location}\n`;
+        exportData += `DESCRIPTION:${event.description} (exporté le ${moment().format('DD/MM/YYYY')})\n`; // Nom du prof
         exportData += 'END:VEVENT\n';
     }
 
@@ -443,7 +443,7 @@ function update() {
             request({
                 uri: EDT_LINK.replace(YEAR_VAR, '' + i),
                 headers: DEFAULT_HEADERS,
-                transform: body => cheerio.load(body, { decodeEntities: true })
+                transform: body => cheerio.load(body, {decodeEntities: true})
             })
                 .then($ => parse($, i))
                 .catch(err => console.log("Erreur lors du polling(3) :", err));
