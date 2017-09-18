@@ -8,25 +8,25 @@ const { YEAR, NB_MIN_PER_SPAN, EVENT_SELECTOR, IF_SECTION, REGEX_TIME_LOCATION, 
  * Parse un DOM HTML en un objet {@type PlanningEvent}
  * @param $ Cheerio instance
  * @param event {Object} Evenement en version HTML
- * @return {PlanningEvent} Evénement
+ * @return {PlanningEvent} Evenement
  */
 function parseEvent($, event) {
-    const event = new PlanningEvent();
+    const planningEvent = new PlanningEvent();
 
     //
     // Informations sur l'évenement
     //
     const details = $('tr', event).last().children();
 
-    event.title = $('tr', event).first().text();
-    event.description = details.last().text();
+    planningEvent.title = $('tr', event).first().text();
+    planningEvent.description = details.last().text();
 
     //
     // Groupes concernés
     //
     const start_group = +REGEX_CLASSNAME.exec($(event).parent().attr('class'))[1];
     const end_group = start_group + +$(event).attr('rowspan');
-    event.groups = Array.from({ length: end_group - start_group }, (v, k) => k + start_group);
+    planningEvent.groups = Array.from({ length: end_group - start_group }, (v, k) => k + start_group);
 
 
     //
@@ -38,7 +38,7 @@ function parseEvent($, event) {
     let nb_min = +timeAndLocation[1] * 60 + +timeAndLocation[2];
 
     // On choisi l'année en fonction du numero de semaine
-    event.start = moment({ year: week_num > MIDDLE_WEEK ? YEAR : YEAR + 1 })
+    planningEvent.start = moment({ year: week_num > MIDDLE_WEEK ? YEAR : YEAR + 1 })
         .add({
             w: week_num - 1, // Date is already initialized at the first week
             d: day_num,
@@ -57,7 +57,7 @@ function parseEvent($, event) {
         }
     }
 
-    event.end = moment(event.start)
+    planningEvent.end = moment(planningEvent.start)
         .add({
             m: NB_MIN_PER_SPAN * (colSpan + padding)
         }).toDate();
@@ -65,9 +65,9 @@ function parseEvent($, event) {
     //
     // Location de l'évenement
     //
-    event.location = timeAndLocation[4];
+    planningEvent.location = timeAndLocation[4];
 
-    return event;
+    return planningEvent;
 }
 
 
@@ -79,49 +79,19 @@ function parseEvent($, event) {
  * @return {Array<Planning>} planning
  */
 function parseHTML($, if_year) {
-    const plannings = [];
 
-    /*
-     On initialise les plannings de if_year
-     */
+    // On récupère tous les evenements
+    const allEvents = $(EVENT_SELECTOR).each((i, event) => parseEvent($, event)).get();
 
-    for (const grp of IF_SECTION[if_year]) {
-        planning[if_year][grp] = {};
-    }
+    // On initialise les plannings de if_year
+    // et on ajoutes les events aux
+    // différents plannings (ils sont ajoutés seulement si c'est le bon groupe)
+    const plannings = IF_SECTION[if_year]
+        .map(grp => new Planning(grp, if_year));
 
-    /*
-     On récupère tous les evenements et on les transforme en objet qu'on enregistre
-     */
+    plannings.forEach(planning => planning.addAllEvent(allEvents));
 
-    $(EVENT_SELECTOR).each((i, event) => {
-        const eventObject = getEvent($, event);
-
-        if (!eventObject) return;
-
-        for (const grp of eventObject.groups) {
-            planning[if_year][grp][eventObject.start.getTime()] = eventObject;
-        }
-    });
-
-
-    /*
-     Maintenant, on peut exporté le planning pour chaque groupe
-     */
-
-    let error;
-    for (const grp of IF_SECTION[if_year]) {
-        error = exportCalendar(planning[if_year][grp], if_year, grp);
-
-        updateRSSFeed(if_year, grp);
-
-        if (error) console.log("Erreur lors de l'enregistrement du planning %dIF-GRP%d :", if_year, grp, error);
-    }
-
-    // On bouge le planning dans le cache
-    cache[if_year] = planning[if_year];
-    planning[if_year] = {};
-
-    console.log(`Planning des ${if_year}IF générés !`);
+    return plannings;
 }
 
 module.exports = { parseEvent, parseHTML };

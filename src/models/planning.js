@@ -32,11 +32,16 @@ exports.Planning = class {
 
 
     /**
-     * Add an event to the planning
-     * @param {PlanningEvent} event
+     * Add an array of events to the planning
+     * An event is added only if it has the corresponding group
+     *
+     * @param {Array<PlanningEvent>} events
      */
-    addEvent(event) {
-        this.events[event.start.getTime()] = event;
+    addAllEvent(events) {
+        events.forEach(event => {
+            if (event.groups.indexOf(this.group) === -1) return;
+            this.events[event.start.getTime()] = event;
+        });
     }
 
     /**
