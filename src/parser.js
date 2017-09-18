@@ -1,7 +1,10 @@
 const moment = require('moment');
 
 const { PlanningEvent, Planning } = require('./models/');
-const { YEAR, NB_MIN_PER_SPAN, EVENT_SELECTOR, IF_SECTION, REGEX_TIME_LOCATION, REGEX_CLASSNAME } = require('./constants');
+const {
+    YEAR, NB_MIN_PER_SPAN, EVENT_SELECTOR, IF_SECTION, REGEX_TIME_LOCATION,
+    REGEX_CLASSNAME, REGEX_DATE, MIDDLE_WEEK
+} = require('./constants');
 
 
 /**
