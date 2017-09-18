@@ -1,4 +1,9 @@
 
+const express = require('express');
+
+// Application
+
+const app = express();
 
 //===============//
 //===== WEB =====//

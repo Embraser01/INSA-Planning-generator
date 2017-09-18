@@ -1,6 +1,33 @@
 
+const Feed = require('feed');
 const FEED_DATE_FORMAT = 'DD/MM à HH:mm';
 
+
+// Init feeds & planning
+for (let if_year in IF_SECTION) {
+    feeds[if_year] = {};
+    cache[if_year] = {};
+    planning[if_year] = {};
+    for (let grp of IF_SECTION[if_year]) {
+
+        let feed = new Feed({
+            title: `Emploi du temps ${if_year}IF-Grp.${grp}`,
+            description: `Feed permettant de notifier des changements d'emploi du temps sur les ${MAX_DAYS_TO_NOTIFY} prochains jours`,
+            link: 'https://github.com/Embraser01/INSA-Planning-generator',
+            copyright: 'Copyright (C) 2017 Marc-Antoine FERNANDES',
+            author: {
+                name: 'Marc-Antoine Fernandes',
+                email: 'embraser01@gmail.com',
+                link: 'https://github.com/Embraser01'
+            }
+        });
+
+        feeds[if_year][grp] = {
+            obj: feed,
+            raw: feed.rss2()
+        };
+    }
+}
 
 
 

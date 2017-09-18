@@ -3,10 +3,10 @@ const cheerio = require('cheerio');
 const request = require('request-promise-native').defaults({ jar: true });
 
 const { LOGIN_LINK, DEFAULT_HEADERS, YEAR_VAR, IF_SECTION, INTERVAL, EDT_LINK } = require('./constants');
-const CONFIG = JSON.parse(fs.readFileSync(__dirname + '../config.json').toString());
 const passwordManager = require('./password-manager');
 const parser = require('./parser');
 
+let CONFIG = {};
 
 /**
  * This function connect to CAS (w/ cookies)
@@ -77,16 +77,30 @@ function startInterval() {
                 console.error('Error ', err);
                 startInterval();
             });
-    }, INTERVAL * 60 * 60 * 1000);
+    }, CONFIG.interval * 60 * 60 * 1000);
 }
 
 module.exports = {
-    start() {
+    /**
+     * Start updater service
+     * @param config
+     */
+    start(config) {
+        if (!config.login) throw new Error('Field login was not provided !');
+        if (!config.password) throw new Error('Field password was not provided !');
+        if (!config.interval) console.warn('Field interval was not provided, using default value');
+
+        CONFIG.login = config.login;
+        CONFIG.password = config.password;
+        CONFIG.interval = config.interval || 1;
+
         startInterval();
     },
+    /**
+     *
+     */
     stop() {
         clearTimeout(timeout);
-    },
-    update
+    }
 };
 
