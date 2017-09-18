@@ -52,6 +52,7 @@ const EDT_LINK = 'https://servif-cocktail.insa-lyon.fr/EdT/' + YEAR_VAR + 'IF.ph
 const MIDDLE_WEEK = 30;
 const REGEX_DATE = /S(\d+)-J(\d)/;
 const REGEX_CLASSNAME = /row-group-(\d+)/;
+const REGEX_TIME_LOCATION = /(\d{0,2})h(\d{2})( @ (.*))?/;
 const NB_MIN_PER_SPAN = 15;
 
 const IF_SECTION = {
@@ -111,7 +112,7 @@ function getEvent($, event) {
     const details = $('tr', event).last().children();
     const title = $('tr', event).first().text();
     const description = details.last().text();
-    const [time, location] = details.first().text().split('@');
+    const [, hour, minutes, , location] = REGEX_TIME_LOCATION.exec(details.first().text());
 
     //
     // Groupes concernés
@@ -126,7 +127,7 @@ function getEvent($, event) {
     const [, week_num, day_num] = REGEX_DATE.exec($(event).attr('id'));
     const year = week_num > MIDDLE_WEEK ? YEAR : YEAR + 1; // Choix de l'année en fonction du numéro de semaine
 
-    let nb_min = +time.substr(0, 2) * 60 + +time.substr(3, 5);
+    let nb_min = hour * 60 + minutes;
 
     const start = moment({ year }).add({
         w: week_num - 1, // Date is already initialized at the first week
@@ -186,7 +187,7 @@ function exportCalendar(grp_planning_obj, if_year, grp_num) {
         exportData += 'DTSTART:' + utils.getVCalDate(event.start) + '\n';
         exportData += 'DTEND:' + utils.getVCalDate(event.end) + '\n';
         exportData += 'SUMMARY:' + event.title + '\n';
-        exportData += 'LOCATION:' + event.location + '\n';
+        if (event.location) exportData += 'LOCATION:' + event.location + '\n';
         exportData += 'DESCRIPTION:' + event.description + ' (exporté le ' + moment().format('DD/MM/YYYY') + ')\n'; // Nom du prof
         exportData += 'END:VEVENT\n';
     }
