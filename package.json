@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node ./src/app.js",
     "build": "node build.js",
-    "test": "nyc mocha"
+    "test": "nyc mocha",
+    "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
@@ -16,6 +17,7 @@
     "request-promise-native": "^1.0.4"
   },
   "devDependencies": {
+    "codecov": "^2.3.0",
     "inquirer": "^3.2.3",
     "mocha": "^3.5.3",
     "nyc": "^11.2.1",
