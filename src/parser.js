@@ -90,7 +90,7 @@ function parseHTML($, if_year) {
     // et on ajoutes les events aux
     // différents plannings (ils sont ajoutés seulement si c'est le bon groupe)
     const plannings = IF_SECTION[if_year]
-        .map(grp => new Planning(grp, if_year));
+        .map(grp => new Planning(if_year, grp));
 
     plannings.forEach(planning => planning.addAllEvent(allEvents));
 

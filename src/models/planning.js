@@ -7,9 +7,9 @@ const FEED_DATE_FORMAT = 'DD/MM à HH:mm';
 /**
  * Class representing an planning for a single group of a single year.
  */
-exports.Planning = class {
+module.exports.Planning = class {
 
-    constructor(group, year) {
+    constructor(year, group) {
         /**
          * Group concerned by this planning
          * @type {Number}
