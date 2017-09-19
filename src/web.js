@@ -3,6 +3,7 @@ const fs = require('fs');
 const { format } = require('util');
 
 const { IF_SECTION, EXPORT_FOLDER, FILE_NAME, PORT } = require('./constants');
+const feed = require('./feed');
 
 const webApp = express();
 const mainRouter = new express.Router();
@@ -41,7 +42,7 @@ mainRouter.get('/rss/:year(\\d+)/:group(\\d+)', (req, res, next) => {
 
     if (!groupExists(year, group)) return next();
 
-    return res.send(feeds[year][group].raw);
+    return res.send(feed.getFeedByYearAndGroup(year, group).raw);
 });
 
 webApp.use('', mainRouter);

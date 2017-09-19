@@ -6,6 +6,7 @@ const { LOGIN_LINK, DEFAULT_HEADERS, YEAR_VAR, IF_SECTION, INTERVAL, EDT_LINK } 
 const passwordManager = require('./password-manager');
 const parser = require('./parser');
 const exporter = require('./exporter');
+const feed = require('./feed');
 
 let CONFIG = {};
 
@@ -63,6 +64,7 @@ async function update() {
             return parser.parseHTML($, year);
         });
         exporter.savePlannings(plannings);
+        feed.updateRSSFeed(plannings);
     } catch (e) {
         console.error('Error while updating plannings', e);
     }
