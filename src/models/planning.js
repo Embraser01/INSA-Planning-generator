@@ -9,28 +9,23 @@ const FEED_DATE_FORMAT = 'DD/MM à HH:mm';
  */
 exports.Planning = class {
 
-    /**
-     * Group concerned by this planning
-     * @type {Number}
-     */
-    group;
-
-    /**
-     * Year concerned
-     * @type {Number}
-     */
-    year;
-
-    /**
-     * Object containing all events of a group
-     * @type {Object}
-     */
-    events;
-
-
     constructor(group, year) {
+        /**
+         * Group concerned by this planning
+         * @type {Number}
+         */
         this.group = group;
+
+        /**
+         * Year concerned
+         * @type {Number}
+         */
         this.year = year;
+
+        /**
+         * Object containing all events of a group
+         * @type {Object}
+         */
         this.events = {};
     }
 

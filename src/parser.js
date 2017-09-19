@@ -21,8 +21,8 @@ function parseEvent($, event) {
     //
     const details = $('tr', event).last().children();
 
-    planningEvent.title = $('tr', event).first().text();
-    planningEvent.description = details.last().text();
+    planningEvent.title = $('tr', event).first().text().trim();
+    planningEvent.description = details.last().text().trim();
 
     //
     // Groupes concernés

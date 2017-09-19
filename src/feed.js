@@ -5,27 +5,23 @@ const { Planning } = require('./models');
 
 class PlanningsFeed {
 
-    /**
-     * List of planning used for caching
-     * @type {Array<Planning>}
-     */
-    oldPlannings;
-
-    /**
-     * List of plannings
-     * @type {Array<Planning>}
-     */
-    newPlannings;
-
-    /**
-     * List of feeds to serve in web app
-     * @type {Array} Feed (inside a container)
-     */
-    feeds;
-
     constructor() {
+        /**
+         * List of planning used for caching
+         * @type {Array<Planning>}
+         */
         this.oldPlannings = [];
+
+        /**
+         * List of plannings
+         * @type {Array<Planning>}
+         */
         this.newPlannings = [];
+
+        /**
+         * List of feeds to serve in web app
+         * @type {Array} Feed (inside a container)
+         */
         this.feeds = feedInit();
     }
 

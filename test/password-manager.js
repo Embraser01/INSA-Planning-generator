@@ -1,12 +1,13 @@
 const should = require('should');
 const moment = require('moment');
+
+process.env.ENCRYPTION_KEY = 'YqxKKPm4lYPA2rN7pwBtKQkZBelHsrm6';
 const passwordManager = require('../src/password-manager');
 
-describe('Password manager module', () => {
-    process.env.ENCRYPTION_KEY = 'YqxKKPm4lYPA2rN7pwBtKQkZBelHsrm6';
-    const PASSWORD = 'IamAUnicorn';
+const PASSWORD = 'IamAUnicorn';
 
-    it('should encrypt correctly', () => {
+describe('Password manager module', function () {
+    it('should encrypt correctly', function () {
         const encrypted = passwordManager.encrypt(PASSWORD);
         const decrypted = passwordManager.decrypt(encrypted);
 
@@ -14,7 +15,7 @@ describe('Password manager module', () => {
         decrypted.should.be.equal(PASSWORD);
     });
 
-    it('should not be the same encryption twice', () => {
+    it('should not be the same encryption twice', function () {
         const encrypted = passwordManager.encrypt(PASSWORD);
         const encrypted2 = passwordManager.encrypt(PASSWORD);
 

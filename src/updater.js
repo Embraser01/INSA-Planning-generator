@@ -8,7 +8,7 @@ const parser = require('./parser');
 const exporter = require('./exporter');
 const feed = require('./feed');
 
-let CONFIG = {};
+const CONFIG = {};
 
 /**
  * This function connect to CAS (w/ cookies)

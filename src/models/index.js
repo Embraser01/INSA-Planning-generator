@@ -1,4 +1,4 @@
 const { PlanningEvent } = require('./event');
 const { Planning } = require('./planning');
 
-exports = { PlanningEvent, Planning };
+module.exports = { PlanningEvent, Planning };

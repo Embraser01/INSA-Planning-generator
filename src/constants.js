@@ -1,6 +1,6 @@
 const path = require('path');
 
-exports = Object.freeze({
+module.exports = Object.freeze({
 
     //
     // BASE APP CONFIG

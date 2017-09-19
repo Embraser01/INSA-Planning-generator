@@ -8,7 +8,7 @@ const feed = require('./feed');
 const webApp = express();
 const mainRouter = new express.Router();
 
-let CONFIG = {};
+const CONFIG = {};
 let server;
 
 /**

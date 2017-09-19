@@ -13,48 +13,41 @@ const ICS_DATE_FORMAT = 'YYYYMMDD[T]HHmmss[Z]';
  */
 exports.PlanningEvent = class {
 
-    /**
-     * When the event starts
-     * @type {Date}
-     */
-    start;
-
-    /**
-     * When the event stops
-     * @type {Date}
-     */
-    end;
-
-    /**
-     * Title of the event
-     * @type {String}
-     */
-    title;
-
-    /**
-     * Description of the event
-     * @type {String}
-     */
-    description;
-
-    /**
-     * Location of the event
-     * @type {String}
-     */
-    location;
-
-    /**
-     * List of groups concerned by the event
-     * @type {Array<Number>}
-     */
-    groups;
-
     constructor(start, end, title, description, location, groups) {
+        /**
+         * When the event starts
+         * @type {Date}
+         */
         this.start = start;
+
+        /**
+         * When the event stops
+         * @type {Date}
+         */
         this.end = end;
+
+        /**
+         * Title of the event
+         * @type {String}
+         */
         this.title = title;
+
+        /**
+         * Description of the event
+         * @type {String}
+         */
         this.description = description;
+
+        /**
+         * Location of the event
+         * @type {String}
+         */
         this.location = location;
+
+        /**
+         * List of groups concerned by the event
+         * @type {Array<Number>}
+         */
         this.groups = groups;
     }
 
