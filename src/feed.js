@@ -1,6 +1,6 @@
 const Feed = require('feed');
 
-const { MAX_FEED_SIZE, IF_SECTION } = require('./constants');
+const { MAX_FEED_SIZE, MAX_DAYS_TO_NOTIFY, IF_SECTION } = require('./constants');
 const { Planning } = require('./models');
 
 class PlanningsFeed {

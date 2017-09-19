@@ -1,9 +1,11 @@
 const should = require('should');
 const cheerio = require('cheerio');
+const sinon = require('sinon');
 const moment = require('moment');
+const fs = require('fs');
 
 const parser = require('../src/parser');
-const { PlanningEvent } = require('../src/models');
+const { PlanningEvent, Planning } = require('../src/models');
 const { EVENT_SELECTOR } = require('../src/constants');
 
 describe('Parsing', () => {
@@ -39,15 +41,25 @@ describe('Parsing', () => {
         });
 
         it('should return an event without location if "-"', () => {
-
+            // TODO : Tests
         });
 
         it('should return an event without if not present', () => {
-
+            // TODO : Tests
         });
     });
 
     describe('document HTML', () => {
 
+        it('should find 73 events from resource', () => {
+            const parseEvent = sinon.spy(parser, 'parseEvent');
+            const addAllEvent = sinon.spy(Planning.prototype, 'addAllEvent');
+
+            parser.parseHTML(cheerio.load(fs.readFileSync(__dirname + '/res/data-1.html')), 4)
+                .should.not.throw();
+
+            parseEvent.callCount.should.be.equal(73);
+            addAllEvent.callCount.should.be.equal(4);
+        });
     });
 });

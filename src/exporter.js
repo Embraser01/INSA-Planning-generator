@@ -17,12 +17,10 @@ function savePlannings(plannings) {
         // On vérifie si un fichier existe déjà, si oui et que le planning est vide, on ne fait rien
         if (Object.keys(p.events).length === 0 && fs.existsSync(filePath)) return;
 
-        const data = p.toString();
-
         // On crée un dossier s'il n'existe pas
         if (!fs.existsSync(EXPORT_FOLDER + y)) fs.mkdirSync(EXPORT_FOLDER + y);
 
-        fs.writeFileSync(filePath, data);
+        fs.writeFileSync(filePath, p.toString());
     });
 }
 

@@ -84,7 +84,8 @@ function parseEvent($, event) {
 function parseHTML($, if_year) {
 
     // On récupère tous les evenements
-    const allEvents = $(EVENT_SELECTOR).each((i, event) => parseEvent($, event)).get();
+    // On utilise ici `module.exports.parseEvent()` pour pouver spy avec sinonjs
+    const allEvents = $(EVENT_SELECTOR).map((i, event) => module.exports.parseEvent($, event)).get();
 
     // On initialise les plannings de if_year
     // et on ajoutes les events aux

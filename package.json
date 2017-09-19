@@ -22,7 +22,6 @@
     "mocha": "^3.5.3",
     "nyc": "^11.2.1",
     "should": "^13.0.1",
-    "should-sinon": "^0.0.6",
     "sinon": "^3.3.0"
   },
   "engines": {
