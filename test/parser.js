@@ -8,9 +8,9 @@ const parser = require('../src/parser');
 const { PlanningEvent, Planning } = require('../src/models');
 const { EVENT_SELECTOR } = require('../src/constants');
 
-describe('Parsing', () => {
-    describe('event', () => {
-        it('should return the correct event', () => {
+describe('Parsing', function () {
+    describe('event', function () {
+        it('should return the correct event', function () {
             const $ = cheerio.load(`
                 <table>
                     <tr class="hour row-group-1">
@@ -40,18 +40,18 @@ describe('Parsing', () => {
             event.should.have.property('end').which.is.Date().and.eql(moment('2017-10-23 12:00:00').toDate());
         });
 
-        it('should return an event without location if "-"', () => {
+        it('should return an event without location if "-"', function () {
             // TODO : Tests
         });
 
-        it('should return an event without if not present', () => {
+        it('should return an event without if not present', function () {
             // TODO : Tests
         });
     });
 
-    describe('document HTML', () => {
+    describe('document HTML', function () {
 
-        it('should find 73 events from resource', () => {
+        it('should find 73 events from resource', function () {
             const parseEvent = sinon.spy(parser, 'parseEvent');
             const addAllEvent = sinon.spy(Planning.prototype, 'addAllEvent');
 

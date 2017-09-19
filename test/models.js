@@ -6,9 +6,9 @@ const { Planning, PlanningEvent } = require('../src/models');
 const start1 = moment('2017-10-23 08:00:00');
 const end1 = moment('2017-10-23 10:00:00');
 
-describe('Models', () => {
-    describe('Event', () => {
-        it('should create a correct ICS event', () => {
+describe('Models', function () {
+    describe('Event', function () {
+        it('should create a correct ICS event', function () {
             const event = new PlanningEvent(
                 start1.toDate(),
                 end1.toDate(),
@@ -28,7 +28,7 @@ describe('Models', () => {
             );
         });
 
-        it('should not display location if not provided', () => {
+        it('should not display location if not provided', function () {
             const event = new PlanningEvent(
                 start1.toDate(),
                 end1.toDate(),
@@ -47,9 +47,9 @@ describe('Models', () => {
         });
     });
 
-    describe('Planning', () => {
+    describe('Planning', function () {
 
-        it('should not bug if empty', () => {
+        it('should not bug if empty', function () {
             const planning = new Planning(4, 3);
 
             planning.toString().should.not.throw().and.be.equal(
@@ -60,7 +60,7 @@ describe('Models', () => {
             );
         });
 
-        it('should add all events of the good group', () => {
+        it('should add all events of the good group', function () {
             const planning = new Planning(4, 3);
 
             planning.addAllEvent([
@@ -74,7 +74,7 @@ describe('Models', () => {
         });
 
 
-        it('should generate with events', () => {
+        it('should generate with events', function () {
             const planning = new Planning(4, 3);
 
             planning.addAllEvent([
@@ -91,37 +91,37 @@ describe('Models', () => {
         });
     });
 
-    describe('Comparison between two plannings', () => {
+    describe('Comparison between two plannings', function () {
 
-        it('no change', () => {
+        it('no change', function () {
             // TODO : Tests
         });
 
-        it('added lesson', () => {
+        it('added lesson', function () {
             // TODO : Tests
         });
 
-        it('removed lesson', () => {
+        it('removed lesson', function () {
             // TODO : Tests
         });
 
-        it('replaced lesson', () => {
+        it('replaced lesson', function () {
             // TODO : Tests
         });
 
-        it('longer lesson', () => {
+        it('longer lesson', function () {
             // TODO : Tests
         });
 
-        it('location change', () => {
+        it('location change', function () {
             // TODO : Tests
         });
 
-        it('description change', () => {
+        it('description change', function () {
             // TODO : Tests
         });
 
-        it('do not notify after delay', () => {
+        it('do not notify after delay', function () {
             // TODO : Tests
         });
     });

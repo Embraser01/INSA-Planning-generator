@@ -1,5 +1,5 @@
 const should = require('should');
 
-describe('Feed', () => {
+describe('Feed', function () {
 
 });

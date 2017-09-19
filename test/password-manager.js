@@ -1,5 +1,4 @@
 const should = require('should');
-const moment = require('moment');
 
 process.env.ENCRYPTION_KEY = 'YqxKKPm4lYPA2rN7pwBtKQkZBelHsrm6';
 const passwordManager = require('../src/password-manager');
