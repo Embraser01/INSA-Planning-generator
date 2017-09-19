@@ -10,11 +10,17 @@ const CONFIG = JSON.parse(fs.readFileSync(__dirname + '../config.json').toString
 
 // Start updater
 const updater = require('./updater');
+const web = require('./web');
 
 updater.start({
     login: CONFIG.login,
     password: CONFIG.password,
-    interval: CONFIG.interval
 });
 
+web.start({
+    ssl: CONFIG.ssl,
+    sslKey: CONFIG.sslKey,
+    sslCert: CONFIG.sslCert,
+});
 
+// TODO: listen for SIGINT

@@ -5,6 +5,7 @@ const request = require('request-promise-native').defaults({ jar: true });
 const { LOGIN_LINK, DEFAULT_HEADERS, YEAR_VAR, IF_SECTION, INTERVAL, EDT_LINK } = require('./constants');
 const passwordManager = require('./password-manager');
 const parser = require('./parser');
+const exporter = require('./exporter');
 
 let CONFIG = {};
 
@@ -55,13 +56,13 @@ function loadSchedule(year) {
  * Met à jour les tous les emplois du temps
  */
 async function update() {
-
     try {
         await casLogin();
-        Object.keys(IF_SECTION).map(async year => {
+        const plannings = Object.keys(IF_SECTION).map(async year => {
             const $ = await loadSchedule(year);
-            parser.parseHTML($, year);
+            return parser.parseHTML($, year);
         });
+        exporter.savePlannings(plannings);
     } catch (e) {
         console.error('Error while updating plannings', e);
     }
@@ -92,7 +93,7 @@ module.exports = {
 
         CONFIG.login = config.login;
         CONFIG.password = config.password;
-        CONFIG.interval = config.interval || 1;
+        CONFIG.interval = config.interval || INTERVAL;
 
         startInterval();
     },
