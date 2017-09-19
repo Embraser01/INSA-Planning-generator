@@ -10,6 +10,8 @@ const CONFIG = JSON.parse(fs.readFileSync(__dirname + '../config.json').toString
 
 // Start updater
 const updater = require('./updater');
+
+// Launch web
 const web = require('./web');
 
 updater.start({
