@@ -1,8 +1,10 @@
 # Générateur d'emplois du temps - INSA Lyon
 
-[![license](https://img.shields.io/github/license/embraser01/INSA-Planning-generator.svg)](./LICENSE.md)
-[![dependencies Status](https://david-dm.org/embraser01/INSA-Planning-generator/status.svg)](https://david-dm.org/embraser01/INSA-Planning-generator)
-[![devDependencies Status](https://david-dm.org/embraser01/INSA-Planning-generator/dev-status.svg)](https://david-dm.org/embraser01/INSA-Planning-generator?type=dev)
+[![license](https://img.shields.io/github/license/Embraser01/INSA-Planning-generator.svg)](./LICENSE.md)
+[![David](https://img.shields.io/david/Embraser01/INSA-Planning-generator/class-refactoring.svg)](https://david-dm.org/embraser01/INSA-Planning-generator)
+[![David](https://img.shields.io/david/dev/Embraser01/INSA-Planning-generator/class-refactoring.svg)](https://david-dm.org/embraser01/INSA-Planning-generator)
+[![Travis](https://img.shields.io/travis/Embraser01/INSA-Planning-generator/class-refactoring.svg)](https://travis-ci.org/Embraser01/INSA-Planning-generator)
+[![Codecov branch](https://img.shields.io/codecov/c/github/Embraser01/INSA-Planning-generator/class-refactoring.svg)](https://codecov.io/gh/Embraser01/INSA-Planning-generator/branch/class-refactoring)
 
 ## Presentation
 
@@ -31,7 +33,7 @@ Il n'y a aucune garantie que le serveur fonctionne en permanence !
 
 ### Dépendance
 
--  [Node JS](https://nodejs.org) V6.7.0+
+-  [Node JS](https://nodejs.org) V8.3+
   
 
 ### Téléchargement et installation des dépendances
