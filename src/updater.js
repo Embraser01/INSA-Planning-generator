@@ -1,4 +1,3 @@
-const fs = require('fs');
 const cheerio = require('cheerio');
 const request = require('request-promise-native').defaults({ jar: true });
 
@@ -14,6 +13,7 @@ const CONFIG = {};
  * This function connect to CAS (w/ cookies)
  */
 function casLogin() {
+    /* istanbul ignore next: depends heavily on INSA CAS so trust me */
     return request({
         uri: LOGIN_LINK,
         transform: body => cheerio.load(body) // Load DOM
@@ -45,6 +45,7 @@ function casLogin() {
  * @return {Promise} request promise
  */
 function loadSchedule(year) {
+    /* istanbul ignore next: depends on the link ot the planning so no test for this */
     return request({
         uri: EDT_LINK.replace(YEAR_VAR, year),
         headers: DEFAULT_HEADERS,
@@ -57,6 +58,7 @@ function loadSchedule(year) {
  * Met à jour les tous les emplois du temps
  */
 async function update() {
+    /* istanbul ignore next: sure part (just call some functions) */
     try {
         await casLogin();
         const plannings = Object.keys(IF_SECTION).map(async year => {
@@ -73,6 +75,7 @@ async function update() {
 let timeout;
 
 function startInterval() {
+    /* istanbul ignore next: sure part (just call update function) */
     timeout = setTimeout(() => {
         update()
             .then(startInterval)
@@ -83,6 +86,7 @@ function startInterval() {
     }, CONFIG.interval * 60 * 60 * 1000);
 }
 
+/* istanbul ignore next: nearly impossible to test this part */
 module.exports = {
     /**
      * Start updater service
