@@ -4,7 +4,7 @@ const moment = require('moment');
  * Official date format for an ICS event
  * @type {string}
  */
-const ICS_DATE_FORMAT = 'YYYYMMDD[T]HHmmss[Z]';
+const ICS_DATE_FORMAT = 'YYYYMMDD[T]HHmmss';
 
 /**
  * Class representing an event.
@@ -57,8 +57,8 @@ module.exports.PlanningEvent = class {
      */
     toString() {
         let str = 'BEGIN:VEVENT\n';
-        str += 'DTSTART:' + moment(this.start).format(ICS_DATE_FORMAT) + '\n';
-        str += 'DTEND:' + moment(this.end).format(ICS_DATE_FORMAT) + '\n';
+        str += 'DTSTART;TZID=Europe/Paris:' + moment(this.start).format(ICS_DATE_FORMAT) + '\n';
+        str += 'DTEND;TZID=Europe/Paris:' + moment(this.end).format(ICS_DATE_FORMAT) + '\n';
         str += 'SUMMARY:' + this.title + '\n';
         if (this.location) str += 'LOCATION:' + this.location + '\n';
         str += 'DESCRIPTION:' + this.description + '(exporté le ' + moment().format('DD/MM/YYYY') + ')\n';

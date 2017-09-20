@@ -19,8 +19,8 @@ describe('Models', function () {
 
             event.should.be.equal(
                 'BEGIN:VEVENT\n' +
-                'DTSTART:20171023T080000Z\n' +
-                'DTEND:20171023T100000Z\n' +
+                'DTSTART;TZID=Europe/Paris:20171023T080000\n' +
+                'DTEND;TZID=Europe/Paris:20171023T100000\n' +
                 'SUMMARY:My awesome event\n' +
                 'LOCATION:My place\n' +
                 `DESCRIPTION:With candies and happiness !(exporté le ${moment().format('DD/MM/YYYY')})\n` +
@@ -38,8 +38,8 @@ describe('Models', function () {
 
             event.should.be.equal(
                 'BEGIN:VEVENT\n' +
-                'DTSTART:20171023T080000Z\n' +
-                'DTEND:20171023T100000Z\n' +
+                'DTSTART;TZID=Europe/Paris:20171023T080000\n' +
+                'DTEND;TZID=Europe/Paris:20171023T100000\n' +
                 'SUMMARY:My awesome event\n' +
                 `DESCRIPTION:With candies and happiness !(exporté le ${moment().format('DD/MM/YYYY')})\n` +
                 'END:VEVENT\n'
