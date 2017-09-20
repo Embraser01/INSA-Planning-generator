@@ -11,6 +11,11 @@
   Serveur NodeJS qui génère les emplois du temps du département INFO de l'INSA Lyon sous la forme de fichier .ics, compatible avec la majorité des calendriers.
   
   L'application actualise l'ensemble des emplois du temps toutes les heures.
+  
+## Serveur de demo
+
+Un serveur est actuellement en route sur cete adresse : `https://calendar.insa.finch4.xyz/`.
+Il n'y a aucune garantie que le serveur fonctionne en permanence !
 
 ## Utilisation avec Google calendar
 
@@ -24,10 +29,12 @@ Pour avoir le calendrier sur Google :
 
 N.B. : Si le serveur est éteint, l'emploi du temps restera visible mais ne sera plus mis à jour.
 
-## Serveur de demo
+### Example
 
-Un serveur est actuellement en route sur cete adresse : `https://calendar.insa.finch4.xyz/`.
-Il n'y a aucune garantie que le serveur fonctionne en permanence !
+Donc par exemple pour récupérer l'emplois du temps du **groupe 2** des **3IF**
+il suffit de rajouter ce lien là :
+   `https://calendar.insa.finch4.xyz/export/3/2`
+
 
 ## Mise en ligne
 
