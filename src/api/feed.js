@@ -1,4 +1,4 @@
-const Feed = require('src/api/feed');
+const Feed = require('feed');
 
 const { MAX_FEED_SIZE, MAX_DAYS_TO_NOTIFY, IF_SECTION } = require('./constants');
 const { Planning } = require('./models/index');
@@ -78,10 +78,10 @@ class PlanningsFeed {
 function feedInit() {
     const feeds = [];
 
-    for (const year in IF_SECTION) {
-        for (const grp of IF_SECTION[year]) {
+    for (const year of Object.keys(IF_SECTION)) {
+        for (const group of IF_SECTION[year]) {
             const feed = new Feed({
-                title: `Emploi du temps ${year}IF-Grp.${grp}`,
+                title: `Emploi du temps ${year}IF-Grp.${group}`,
                 description: `Feed permettant de notifier des changements d'emploi du temps sur les ${MAX_DAYS_TO_NOTIFY} prochains jours`,
                 link: 'https://github.com/Embraser01/INSA-Planning-generator',
                 copyright: 'Copyright (C) 2017 Marc-Antoine FERNANDES',
@@ -95,8 +95,8 @@ function feedInit() {
             feeds.push({
                 obj: feed,
                 raw: feed.rss2(),
-                year,
-                grp
+                year: parseInt(year),
+                group
             });
         }
     }
