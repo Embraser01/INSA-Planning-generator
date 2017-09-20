@@ -1,6 +1,5 @@
 const express = require('express');
 const fs = require('fs');
-const { PORT } = require('../api/constants');
 
 const routes = require('./routes');
 const webApp = express();
@@ -8,7 +7,7 @@ const webApp = express();
 const WEB_CONFIG = {};
 let server;
 
-webApp.use('', routes);
+webApp.use('/', routes);
 
 /**
  * Start the http server with SSL Configuration if wanted
@@ -29,7 +28,7 @@ function startExpressApp() {
     }
 
     // Listen on provided port, on all network interfaces.
-    server.listen(PORT);
+    server.listen(WEB_CONFIG.port);
     server.on('error', onError);
     server.on('listening', () => {
         const addr = server.address();

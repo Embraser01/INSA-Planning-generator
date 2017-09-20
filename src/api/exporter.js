@@ -7,8 +7,11 @@ const { EXPORT_FOLDER, FILE_NAME } = require('./constants');
  * @param {Array<Planning>} plannings
  */
 function savePlannings(plannings) {
+    if (!plannings) return;
 
     plannings.forEach(p => {
+        if (!p) return;
+
         const y = p.year;
         const g = p.group;
         const filePath = getExportedFilePath(y, g);

@@ -33,7 +33,7 @@ class PlanningsFeed {
      * @returns {Object} feed container or undefined
      */
     getFeedByYearAndGroup(year, group) {
-        return this.feeds.find(feed => feed.year === year && feed.group === group);
+        return this.feeds.find(feed => feed.year == year && feed.group == group);
     }
 
     /**

@@ -11,7 +11,7 @@ const routes = new Router();
  * @returns {boolean} true if the group exists
  */
 function groupExists(year, group) {
-    return !IF_SECTION[year] || IF_SECTION[year].indexOf(group) === -1;
+    return IF_SECTION[year] && IF_SECTION[year].indexOf(group) > -1;
 }
 
 /**
@@ -23,6 +23,7 @@ routes.get('/export/:year(\\d+)/:group(\\d+)', (req, res, next) => {
 
     if (!groupExists(year, group)) return next();
 
+    res.set('Content-Disposition', `attachment; filename=EDT-${year}IF-Grp${group}.ics`);
     return res.sendFile(exporter.getExportedFilePath(year, group));
 });
 

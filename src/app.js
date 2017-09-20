@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { UPDATER, WEB, ENCRYPTION_KEY } = JSON.parse(fs.readFileSync(__dirname + '../config.json').toString());
+const { UPDATER, WEB, ENCRYPTION_KEY } = JSON.parse(fs.readFileSync(__dirname + '/../config.json').toString());
 
 // Must be 32 characters
 process.env.ENCRYPTION_KEY = ENCRYPTION_KEY;

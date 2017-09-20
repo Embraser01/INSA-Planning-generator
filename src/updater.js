@@ -1,4 +1,5 @@
 const cheerio = require('cheerio');
+const moment = require('moment');
 const request = require('request-promise-native').defaults({ jar: true });
 
 const { LOGIN_LINK, DEFAULT_HEADERS, YEAR_VAR, IF_SECTION, EDT_LINK } = require('./api/constants');
@@ -56,12 +57,15 @@ function loadSchedule(year) {
 async function update() {
     try {
         await casLogin();
-        const plannings = Object.keys(IF_SECTION).map(async year => {
+        let plannings = [];
+
+        for (const year of Object.keys(IF_SECTION)) {
             const $ = await loadSchedule(year);
-            return parser.parseHTML($, year);
-        });
+            plannings.push(...parser.parseHTML($, year));
+        }
         exporter.savePlannings(plannings);
         feed.updateRSSFeed(plannings);
+        console.log(`Plannings were updated on ${moment().format('lll')} !`);
     } catch (e) {
         console.error('Error while updating plannings', e);
     }
@@ -80,6 +84,10 @@ function startInterval() {
     }, UPDATER_CONFIG.interval * 60 * 60 * 1000);
 }
 
+
+function noop() {
+}
+
 module.exports = {
     /**
      * Start updater service
@@ -95,12 +103,15 @@ module.exports = {
         UPDATER_CONFIG.interval = config.interval;
 
         startInterval();
+        update().then(noop).catch(noop);
     },
     /**
      *
      */
     stop() {
         clearTimeout(timeout);
-    }
+    },
+
+    update
 };
 

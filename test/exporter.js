@@ -29,6 +29,11 @@ describe('Exporter', function () {
         fs.readFileSync(EXPORT_FOLDER + 'tests/' + format(FILE_NAME, 1)).toString().should.be.equal('[object Object]');
     });
 
+    it('should not crash if null', function () {
+        should.doesNotThrow(() => exporter.savePlannings());
+        should.doesNotThrow(() => exporter.savePlannings([undefined, undefined]));
+    });
+
     it('should not export because empty and file already exists', function () {
         exporter.savePlannings([
             {

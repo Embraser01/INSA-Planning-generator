@@ -84,17 +84,18 @@ module.exports = Object.freeze({
 
     /**
      * Integrated year variable
+     * !! Must change also {EDT_LINK} !!
      *
      * @type {string}
      */
-    YEAR_VAR: '$if_year',
+    YEAR_VAR: '#{if_year}',
 
     /**
      * Link to the schedule
      *
      * @type {string}
      */
-    EDT_LINK: `https://servif-cocktail.insa-lyon.fr/EdT/${this.YEAR_VAR}IF.php`,
+    EDT_LINK: `https://servif-cocktail.insa-lyon.fr/EdT/#{if_year}IF.php`,
 
     /**
      * IF Schedule start in September and end in July
