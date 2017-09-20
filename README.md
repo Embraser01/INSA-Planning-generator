@@ -1,10 +1,10 @@
 # Générateur d'emplois du temps - INSA Lyon
 
 [![license](https://img.shields.io/github/license/Embraser01/INSA-Planning-generator.svg)](./LICENSE.md)
-[![David](https://img.shields.io/david/Embraser01/INSA-Planning-generator/class-refactoring.svg)](https://david-dm.org/embraser01/INSA-Planning-generator)
-[![David](https://img.shields.io/david/dev/Embraser01/INSA-Planning-generator/class-refactoring.svg)](https://david-dm.org/embraser01/INSA-Planning-generator)
-[![Travis](https://img.shields.io/travis/Embraser01/INSA-Planning-generator/class-refactoring.svg)](https://travis-ci.org/Embraser01/INSA-Planning-generator)
-[![Codecov branch](https://img.shields.io/codecov/c/github/Embraser01/INSA-Planning-generator/class-refactoring.svg)](https://codecov.io/gh/Embraser01/INSA-Planning-generator/branch/class-refactoring)
+[![David](https://img.shields.io/david/Embraser01/INSA-Planning-generator.svg)](https://david-dm.org/embraser01/INSA-Planning-generator)
+[![David](https://img.shields.io/david/dev/Embraser01/INSA-Planning-generator.svg)](https://david-dm.org/embraser01/INSA-Planning-generator)
+[![Travis](https://img.shields.io/travis/Embraser01/INSA-Planning-generator.svg)](https://travis-ci.org/Embraser01/INSA-Planning-generator)
+[![Codecov branch](https://img.shields.io/codecov/c/github/Embraser01/INSA-Planning-generator.svg)](https://codecov.io/gh/Embraser01/INSA-Planning-generator/)
 
 ## Presentation
 
