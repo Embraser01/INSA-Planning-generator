@@ -1,8 +1,0 @@
-{
-  "login": "username",
-  "password": "cryptedPassword",
-  "KEY": "32 ASCII char key",
-  "ssl": false,
-  "sslKey": "fakePath",
-  "sslCert": "fakePath"
-}

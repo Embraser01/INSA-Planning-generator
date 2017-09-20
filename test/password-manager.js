@@ -1,7 +1,7 @@
 const should = require('should');
 
 process.env.ENCRYPTION_KEY = 'YqxKKPm4lYPA2rN7pwBtKQkZBelHsrm6';
-const passwordManager = require('../src/password-manager');
+const passwordManager = require('../src/api/password-manager');
 
 const PASSWORD = 'IamAUnicorn';
 

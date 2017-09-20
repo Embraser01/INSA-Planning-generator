@@ -14,14 +14,6 @@ module.exports = Object.freeze({
      */
     YEAR: 2017,
 
-    /**
-     * Interval for updating the planning from the online schedule
-     *
-     * @type {Number} Number in hours
-     */
-    INTERVAL: 1,
-
-
     //
     // EXPORT CONFIG
     //
@@ -40,7 +32,7 @@ module.exports = Object.freeze({
      *
      * @type {string}
      */
-    EXPORT_FOLDER: path.normalize(__dirname + '/../export/'),
+    EXPORT_FOLDER: path.normalize(__dirname + '/../../export/'),
 
 
     //
@@ -159,18 +151,6 @@ module.exports = Object.freeze({
      * @type {RegExp}
      */
     REGEX_TIME_LOCATION: /(\d{2})h(\d{2})(\s@\s(?!-)(.*))?/,
-
-
-    //
-    // WEB APP CONFIG
-    //
-
-    /**
-     * Port of the web app
-     *
-     * @type {Number}
-     */
-    PORT: 8003 || process.env.PORT,
 
 
     //

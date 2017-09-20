@@ -2,8 +2,8 @@ const should = require('should');
 const fs = require('fs');
 const { format } = require('util');
 
-const exporter = require('../src/exporter');
-const { EXPORT_FOLDER, FILE_NAME } = require('../src/constants');
+const exporter = require('../src/api/exporter');
+const { EXPORT_FOLDER, FILE_NAME } = require('../src/api/constants');
 
 describe('Exporter', function () {
 

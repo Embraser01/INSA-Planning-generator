@@ -1,19 +1,16 @@
 const cheerio = require('cheerio');
 const request = require('request-promise-native').defaults({ jar: true });
 
-const { LOGIN_LINK, DEFAULT_HEADERS, YEAR_VAR, IF_SECTION, INTERVAL, EDT_LINK } = require('./constants');
-const passwordManager = require('./password-manager');
-const parser = require('./parser');
-const exporter = require('./exporter');
-const feed = require('./feed');
+const { LOGIN_LINK, DEFAULT_HEADERS, YEAR_VAR, IF_SECTION, EDT_LINK } = require('./api/constants');
+const { exporter, parser, feed } = require('./api/');
+const passwordManager = require('./api/password-manager');
 
-const CONFIG = {};
+const UPDATER_CONFIG = {};
 
 /**
  * This function connect to CAS (w/ cookies)
  */
 function casLogin() {
-    /* istanbul ignore next: depends heavily on INSA CAS so trust me */
     return request({
         uri: LOGIN_LINK,
         transform: body => cheerio.load(body) // Load DOM
@@ -28,8 +25,8 @@ function casLogin() {
             uri: LOGIN_LINK,
             method: 'POST',
             form: {
-                username: CONFIG.login,
-                password: passwordManager.decrypt(CONFIG.password),
+                username: UPDATER_CONFIG.login,
+                password: passwordManager.decrypt(UPDATER_CONFIG.password),
                 lt: lt,
                 execution: execution,
                 _eventId: 'submit'
@@ -45,7 +42,6 @@ function casLogin() {
  * @return {Promise} request promise
  */
 function loadSchedule(year) {
-    /* istanbul ignore next: depends on the link ot the planning so no test for this */
     return request({
         uri: EDT_LINK.replace(YEAR_VAR, year),
         headers: DEFAULT_HEADERS,
@@ -58,7 +54,6 @@ function loadSchedule(year) {
  * Met à jour les tous les emplois du temps
  */
 async function update() {
-    /* istanbul ignore next: sure part (just call some functions) */
     try {
         await casLogin();
         const plannings = Object.keys(IF_SECTION).map(async year => {
@@ -75,7 +70,6 @@ async function update() {
 let timeout;
 
 function startInterval() {
-    /* istanbul ignore next: sure part (just call update function) */
     timeout = setTimeout(() => {
         update()
             .then(startInterval)
@@ -83,23 +77,22 @@ function startInterval() {
                 console.error('Error ', err);
                 startInterval();
             });
-    }, CONFIG.interval * 60 * 60 * 1000);
+    }, UPDATER_CONFIG.interval * 60 * 60 * 1000);
 }
 
-/* istanbul ignore next: nearly impossible to test this part */
 module.exports = {
     /**
      * Start updater service
      * @param config
      */
     start(config) {
-        if (!config.login) throw new Error('Field login was not provided !');
-        if (!config.password) throw new Error('Field password was not provided !');
-        if (!config.interval) console.warn('Field interval was not provided, using default value');
+        if (!config.login) throw new Error('Field `login` was not provided !');
+        if (!config.password) throw new Error('Field `password` was not provided !');
+        if (!config.interval) console.warn('Field `interval` was not provided, using default value');
 
-        CONFIG.login = config.login;
-        CONFIG.password = config.password;
-        CONFIG.interval = config.interval || INTERVAL;
+        UPDATER_CONFIG.login = config.login;
+        UPDATER_CONFIG.password = config.password;
+        UPDATER_CONFIG.interval = config.interval;
 
         startInterval();
     },

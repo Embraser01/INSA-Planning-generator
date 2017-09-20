@@ -47,24 +47,33 @@ Installer les dépendances
 
 ```bash
 cd INSA-Planning-generator/
-npm install
+yarn #npm install
 ```
 
 ###  Configuration
 
-- La configuration se fait par le fichier `build.js` :
+- Pour configurer le serveur :
 
 ```bash
-node build.js
+yarn run build #npm run build
 ```
 
-- Pour du SSL, modifier le fichier `config.js`
+Le fichier de configuration ressemble à ceci : 
 
+- **ENCRYPTION_KEY**: (String) Encryption key used to crypt the password (`aes-256-cbc` with IV), must be a 32 characters string
+- **WEB**: (Object) Contains the configuration of the web part :
+    * **ssl**: (Boolean) Activate the HTTPS server.
+    * **sslCert**: (String) Path to the SSL certificate file.
+    * **sslKey**: (String) Path to the SSL key file.
+- **UPDATER**: (Object) Contains the configuration of the updater part (it's where the magic happens):
+    * **password**: (String) Password used to access plannings (encrypted).
+    * **login**: (String) Login name used to access plannings.
+    * **interval**: (Number) Time between intervals (in hours)
 
 ### Lancer le serveur
 
 ```bash
-npm start
+yarn start #npm start
 ```
 
 Pour le lancer avec screen :

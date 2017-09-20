@@ -1,7 +1,7 @@
 const should = require('should');
 const moment = require('moment');
 
-const { Planning, PlanningEvent } = require('../src/models');
+const { Planning, PlanningEvent } = require('../src/api/models');
 
 const start1 = moment('2017-10-23 08:00:00');
 const end1 = moment('2017-10-23 10:00:00');

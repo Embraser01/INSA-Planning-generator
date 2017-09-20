@@ -1,65 +1,28 @@
 const express = require('express');
 const fs = require('fs');
-const { format } = require('util');
+const { PORT } = require('../api/constants');
 
-const { IF_SECTION, EXPORT_FOLDER, FILE_NAME, PORT } = require('./constants');
-const feed = require('./feed');
-
+const routes = require('./routes');
 const webApp = express();
-const mainRouter = new express.Router();
 
-const CONFIG = {};
+const WEB_CONFIG = {};
 let server;
 
-/**
- * Utility to know if a tuple (year, group) exists
- * @param year {Number} Year (e.g. 4)
- * @param group {Number} Group (e.g. 2)
- * @returns {boolean} true if the group exists
- */
-function groupExists(year, group) {
-    return !IF_SECTION[year] || IF_SECTION[year].indexOf(group) === -1;
-}
-
-/**
- * Route to the ICS File
- */
-mainRouter.get('/export/:year(\\d+)/:group(\\d+)', (req, res, next) => {
-    const year = +req.params.year;
-    const group = +req.params.group;
-
-    if (!groupExists(year, group)) return next();
-
-    return res.sendFile(EXPORT_FOLDER + year + '/' + format(FILE_NAME, group));
-});
-
-/**
- * Route for the RSS Feed
- */
-mainRouter.get('/rss/:year(\\d+)/:group(\\d+)', (req, res, next) => {
-    const year = +req.params.year;
-    const group = +req.params.group;
-
-    if (!groupExists(year, group)) return next();
-
-    return res.send(feed.getFeedByYearAndGroup(year, group).raw);
-});
-
-webApp.use('', mainRouter);
+webApp.use('', routes);
 
 /**
  * Start the http server with SSL Configuration if wanted
  */
 function startExpressApp() {
     // Create HTTP or HTTPS server.
-    if (CONFIG.ssl) {
-        if (!CONFIG.sslKey || !CONFIG.sslCert) {
+    if (WEB_CONFIG.ssl) {
+        if (!WEB_CONFIG.sslKey || !WEB_CONFIG.sslCert) {
             throw new Error("Cannot start HTTPS server, `sslKey` or `sslCert` is missing in config.js.")
         }
 
         server = require('https').createServer({
-            key: fs.readFileSync(CONFIG.sslKey),
-            cert: fs.readFileSync(CONFIG.sslCert)
+            key: fs.readFileSync(WEB_CONFIG.sslKey),
+            cert: fs.readFileSync(WEB_CONFIG.sslCert)
         }, webApp);
     } else {
         server = require('http').createServer(webApp);
@@ -105,14 +68,18 @@ function onError(error) {
 
 module.exports = {
     start(config) {
-        CONFIG.ssl = !!config.ssl;
-        CONFIG.sslCert = config.sslCert;
-        CONFIG.sslKey = config.sslKey;
+        WEB_CONFIG.ssl = !!config.ssl;
+        WEB_CONFIG.sslCert = config.sslCert;
+        WEB_CONFIG.sslKey = config.sslKey;
+
+        if (!config.port) throw new Error('Field `port` was not provided, please fix your config');
+        WEB_CONFIG.port = config.port;
 
         startExpressApp();
     },
 
     stop() {
+        if (!server) throw new Error('Stop was called before start');
         server.close();
     }
 };

@@ -4,9 +4,9 @@ const sinon = require('sinon');
 const moment = require('moment');
 const fs = require('fs');
 
-const parser = require('../src/parser');
-const { PlanningEvent, Planning } = require('../src/models');
-const { EVENT_SELECTOR } = require('../src/constants');
+const parser = require('../src/api/parser');
+const { PlanningEvent, Planning } = require('../src/api/models');
+const { EVENT_SELECTOR } = require('../src/api/constants');
 
 describe('Parsing', function () {
     describe('event', function () {

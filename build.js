@@ -1,20 +1,7 @@
-/*
- INSA-Planning-generator  Copyright (C) 2017  Marc-Antoine FERNANDES
- This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
- This is free software, and you are welcome to redistribute it
- under certain conditions; type `show c' for details.
- */
-
-'use strict';
-
-const passwordManager = require('./src/password-manager');
+const passwordManager = require('./src/api/password-manager');
 const fs = require('fs');
 const inquirer = require('inquirer');
-
-// Load config template and generate a new KEY
-const config = JSON.parse(fs.readFileSync('./config.dist.json').toString());
-
-const KEY = process.env.ENCRYPTION_KEY = require('crypto').randomBytes(16).toString('hex');
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY = require('crypto').randomBytes(16).toString('hex');
 
 // Ask user for personal informations
 inquirer.prompt([
@@ -25,7 +12,35 @@ inquirer.prompt([
     }, {
         type: 'password',
         name: 'password',
-        message: 'Mot de passe utilisé ?'
+        message: 'Mot de passe utilisé ?',
+        filter(pass) {
+            return passwordManager.encrypt(pass);
+        }
+    }, {
+        type: 'input',
+        name: 'interval',
+        message: "Interval d'actualisation (en heures) ?",
+        default: 1,
+        validate(value) {
+            if (!isNaN(value) && value > 0) return true;
+            return "L'interval doit être un nombre positif";
+        },
+        filter(value) {
+            return parseFloat(value);
+        }
+    },
+    {
+        type: 'input',
+        name: 'port',
+        message: 'Port du serveur web ?',
+        default: 8003,
+        validate(value) {
+            if (!isNaN(value) && value > 0 && (value | 0) === value) return true;
+            return 'Le port doit être un nombre entier positif';
+        },
+        filter(value) {
+            return parseInt(value);
+        }
     },
     {
         type: 'confirm',
@@ -51,15 +66,20 @@ inquirer.prompt([
     },
 ]).then(res => {
 
-    Object.assign(config, {
-        KEY,
-        password: passwordManager.encrypt(res.password),
-        login: res.login,
-        ssl: res.ssl,
-        sslKey: res.ssl ? res.sslKey : '',
-        sslCert: res.ssl ? res.sslCert : '',
-    });
-
+    const config = {
+        ENCRYPTION_KEY,
+        WEB: {
+            ssl: res.ssl,
+            sslKey: res.sslKey,
+            sslCert: res.sslCert,
+            port: res.port,
+        },
+        UPDATER: {
+            password: res.password,
+            login: res.login,
+            interval: res.interval,
+        }
+    };
 
     // Write config file
     const string = JSON.stringify(config, null, 4);
@@ -67,4 +87,4 @@ inquirer.prompt([
         if (err) return console.log('Erreur lors de la création de la config :' + err);
         console.log('La configuration est terminée');
     });
-});
+}).catch(err => console.log(err));

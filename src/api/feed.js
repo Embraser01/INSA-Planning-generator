@@ -1,7 +1,7 @@
-const Feed = require('feed');
+const Feed = require('src/api/feed');
 
 const { MAX_FEED_SIZE, MAX_DAYS_TO_NOTIFY, IF_SECTION } = require('./constants');
-const { Planning } = require('./models');
+const { Planning } = require('./models/index');
 
 class PlanningsFeed {
 

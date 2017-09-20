@@ -1,28 +1,33 @@
-/*
- INSA-Planning-generator  Copyright (C) 2017  Marc-Antoine FERNANDES
- This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
- This is free software, and you are welcome to redistribute it
- under certain conditions; type `show c' for details.
- */
-
 const fs = require('fs');
-const CONFIG = JSON.parse(fs.readFileSync(__dirname + '../config.json').toString());
+const { UPDATER, WEB, ENCRYPTION_KEY } = JSON.parse(fs.readFileSync(__dirname + '../config.json').toString());
 
-// Start updater
+// Must be 32 characters
+process.env.ENCRYPTION_KEY = ENCRYPTION_KEY;
+
 const updater = require('./updater');
-
-// Launch web
 const web = require('./web');
 
-updater.start({
-    login: CONFIG.login,
-    password: CONFIG.password,
-});
+process.on('SIGINT', stopAll);
 
-web.start({
-    ssl: CONFIG.ssl,
-    sslKey: CONFIG.sslKey,
-    sslCert: CONFIG.sslCert,
-});
+function stopAll() {
+    console.log('Stoping updater service...');
+    updater.stop();
+    console.log('Updater service stopped !');
+    console.log('Stoping web service...');
+    web.stop();
+    console.log('Web service stopped !');
+    console.log('Shutting down, bye !');
+    process.exit();
+}
 
-// TODO: listen for SIGINT
+function startAll() {
+    console.log('Starting updater service...');
+    updater.start(UPDATER);
+    console.log('Updater service started !');
+    console.log('Starting web service...');
+    // Launch web
+    web.start(WEB);
+    console.log('Web service started !');
+}
+
+startAll();
