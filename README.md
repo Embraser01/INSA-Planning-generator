@@ -34,6 +34,15 @@ N.B. : Si le serveur est éteint, l'emploi du temps restera visible mais ne sera
 Donc par exemple pour récupérer l'emplois du temps du **groupe 2** des **3IF**
 il suffit de rajouter ce lien là :
    `https://calendar.insa.finch4.xyz/export/3/2`
+   
+## Flux RSS
+
+Un flux _rss_ est disponible sur cette URL `https://calendar.example.com/rss/:année/:groupe`.
+Il détecte les différents changements d'emplois du temps à 3 semaines:
+  - Ajout d'un cours
+  - Suppression d'un cours
+  - Remplacement d'un cours
+  - Modification d'un cours (enseignants, durée, salle)
 
 
 ## Mise en ligne
