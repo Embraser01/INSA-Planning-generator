@@ -55,37 +55,32 @@ function loadSchedule(year) {
  * Met à jour les tous les emplois du temps
  */
 async function update() {
+    console.log(`${moment()}: Start planning update`);
+    const start = Date.now();
+
     try {
         await casLogin();
-        let plannings = [];
+        await Promise.all(Object.keys(IF_SECTION)
+            .map(year => loadSchedule(year)
+                .then($ => [...parser.parseHTML($, year)])
+                .then(parsedPlannings => {
+                    exporter.savePlannings(parsedPlannings);
+                    return parsedPlannings;
+                })
+                .then(parsedPlannings => feed.updateRSSFeed(parsedPlannings))
+                .catch(err => console.error(`Unable to update planning ${year}IF`, err.message))
+            ));
 
-        for (const year of Object.keys(IF_SECTION)) {
-            const $ = await loadSchedule(year);
-            plannings.push(...parser.parseHTML($, year));
-        }
-        exporter.savePlannings(plannings);
-        feed.updateRSSFeed(plannings);
-        console.log(`Plannings were updated on ${moment().format('lll')} !`);
+        console.log(`${moment()}: Plannings were updated, it took ${(Date.now() - start) / 1000}s !`);
     } catch (e) {
-        console.error('Error while updating plannings', e);
+        console.error(`${moment()}: Error while updating plannings`, e);
     }
 }
 
 let timeout;
 
 function startInterval() {
-    timeout = setTimeout(() => {
-        update()
-            .then(startInterval)
-            .catch(err => {
-                console.error('Error ', err);
-                startInterval();
-            });
-    }, UPDATER_CONFIG.interval * 60 * 60 * 1000);
-}
-
-
-function noop() {
+    timeout = setTimeout(() => update().then(startInterval), UPDATER_CONFIG.interval * 60 * 60 * 1000);
 }
 
 module.exports = {
@@ -96,17 +91,16 @@ module.exports = {
     start(config) {
         if (!config.login) throw new Error('Field `login` was not provided !');
         if (!config.password) throw new Error('Field `password` was not provided !');
-        if (!config.interval) console.warn('Field `interval` was not provided, using default value');
+        if (!config.interval) throw new Error('Field `interval` was not provided !');
 
         UPDATER_CONFIG.login = config.login;
         UPDATER_CONFIG.password = config.password;
         UPDATER_CONFIG.interval = config.interval;
 
-        startInterval();
-        update().then(noop).catch(noop);
+        update().then(startInterval);
     },
     /**
-     *
+     * Stop updater service
      */
     stop() {
         clearTimeout(timeout);
