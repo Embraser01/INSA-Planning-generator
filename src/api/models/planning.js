@@ -1,5 +1,6 @@
 const moment = require('moment');
 const { format } = require('util');
+const { PlanningEvent } = require('./event');
 
 const ICS_FILE_HEADER = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//INSA/Promo//2019//Marc-Antoine F. Exporter v2.0//FR\n';
 const FEED_DATE_FORMAT = 'DD/MM à HH:mm';
@@ -79,8 +80,8 @@ module.exports.Planning = class {
             if (key < now.getTime()) continue;
             if (key > max.getTime()) break;
 
-            const oldEvent = old[key];
-            const recentEvent = recent[key];
+            const oldEvent = old.events[key];
+            const recentEvent = recent.events[key];
 
             // Si ajouter
             if (!oldEvent) {

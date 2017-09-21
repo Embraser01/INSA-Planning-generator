@@ -1,7 +1,7 @@
 const Feed = require('feed');
 
 const { MAX_FEED_SIZE, MAX_DAYS_TO_NOTIFY, IF_SECTION } = require('./constants');
-const { Planning } = require('./models/index');
+const { Planning } = require('./models/planning');
 
 class PlanningsFeed {
 
@@ -41,32 +41,31 @@ class PlanningsFeed {
      * @param newPlannings
      */
     updateRSSFeed(newPlannings) {
-        this.oldPlannings = this.newPlannings;
-        this.newPlannings = newPlannings;
-
         const now = new Date();
 
-        // Compare each planning with its old version
-        this.oldPlannings.forEach(old => {
-            newPlannings.forEach(newP => {
-                if (newP.year !== old.year || newP.group !== old.group) return;
+        newPlannings.forEach(newP => {
+            const oldIndex = this.oldPlannings.findIndex(p => p.year === newP.year && p.group === newP.group);
 
-                const feed = this.getFeedByYearAndGroup(newP.year, newP.group);
+            if (oldIndex === -1) return this.oldPlannings.push(newP);
 
-                // Prevent from overflow
-                if (feed.obj.items.length > MAX_FEED_SIZE) {
-                    feed.obj.items.splice(0, feed.obj.items.length - MAX_FEED_SIZE);
-                }
+            const feed = this.getFeedByYearAndGroup(newP.year, newP.group);
 
-                Planning.compare(old, newP).forEach(message => feed.obj.addItem({
-                    title: message.title,
-                    description: message.description,
-                    date: now
-                }));
+            // Prevent from overflow
+            if (feed.obj.items.length > MAX_FEED_SIZE) {
+                feed.obj.items.splice(0, feed.obj.items.length - MAX_FEED_SIZE);
+            }
 
-                // Update raw rss
-                feed.raw = feed.obj.rss2();
-            });
+            Planning.compare(this.oldPlannings[oldIndex], newP).forEach(message => feed.obj.addItem({
+                title: message.title,
+                description: message.description,
+                date: now
+            }));
+
+            // Update raw rss
+            feed.raw = feed.obj.rss2();
+
+            // The new planning replace the old
+            this.oldPlannings[oldIndex] = newP;
         });
     }
 }
