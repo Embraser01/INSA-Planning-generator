@@ -41,12 +41,13 @@ function parseEvent($, event) {
     let nb_min = +timeAndLocation[1] * 60 + +timeAndLocation[2];
 
     // On choisi l'année en fonction du numero de semaine
-    planningEvent.start = moment({ year: week_num > MIDDLE_WEEK ? YEAR : YEAR + 1 })
-        .add({
-            w: week_num - 1, // Date is already initialized at the first week
-            d: day_num,
-            m: nb_min,
-        }).toDate();
+    planningEvent.start = moment(0)
+        .year(week_num > MIDDLE_WEEK ? YEAR : YEAR + 1)
+        .week(week_num)
+        .weekday(day_num)
+        .hour(0)
+        .minute(nb_min)
+        .toDate();
 
     // On enlève les marges invisibles
     const colSpan = +$(event).attr('colspan');
@@ -60,10 +61,7 @@ function parseEvent($, event) {
         }
     }
 
-    planningEvent.end = moment(planningEvent.start)
-        .add({
-            m: NB_MIN_PER_SPAN * (colSpan + padding)
-        }).toDate();
+    planningEvent.end = moment(planningEvent.start).add(NB_MIN_PER_SPAN * (colSpan + padding), 'm').toDate();
 
     //
     // Location de l'évenement
