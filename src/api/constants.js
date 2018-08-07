@@ -12,7 +12,7 @@ module.exports = Object.freeze({
      *
      * @type {Number}
      */
-    YEAR: 2017,
+    YEAR: 2018,
 
     //
     // EXPORT CONFIG
