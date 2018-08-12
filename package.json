@@ -1,5 +1,5 @@
 {
-  "name": "Planning_generator",
+  "name": "planning_generator",
   "version": "1.2.0",
   "private": true,
   "scripts": {
@@ -11,18 +11,18 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
     "express": "^4.16.3",
-    "feed": "^1.1.1",
-    "moment": "^2.21.0",
-    "request": "^2.85.0",
+    "feed": "^2.0.1",
+    "moment": "^2.22.2",
+    "request": "^2.88.0",
     "request-promise-native": "^1.0.5"
   },
   "devDependencies": {
-    "codecov": "^3.0.0",
-    "inquirer": "^5.1.0",
-    "mocha": "^5.0.4",
-    "nyc": "^11.6.0",
-    "should": "^13.2.1",
-    "sinon": "^4.4.6"
+    "codecov": "^3.0.4",
+    "inquirer": "^6.1.0",
+    "mocha": "^5.2.0",
+    "nyc": "^12.0.2",
+    "should": "^13.2.3",
+    "sinon": "^6.1.5"
   },
   "engines": {
     "node": ">=8.3"

@@ -36,8 +36,8 @@ describe('Parsing', function () {
             event.should.have.property('title').which.equal('PLD MARS [TP-Gr.4IF1]');
             event.should.have.property('description').which.startWith('Y. Gripay, S. Servigne');
             event.should.have.property('location').which.startWith('501:212, 501:213');
-            event.should.have.property('start').which.is.Date().and.eql(moment('2017-10-23 08:00:00').toDate());
-            event.should.have.property('end').which.is.Date().and.eql(moment('2017-10-23 12:00:00').toDate());
+            event.should.have.property('start').which.is.Date().and.eql(moment('2018-10-22 08:00:00').toDate());
+            event.should.have.property('end').which.is.Date().and.eql(moment('2018-10-22 12:00:00').toDate());
         });
 
         it('should return an event without location if "-"', function () {
