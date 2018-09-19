@@ -38,10 +38,11 @@ module.exports.Planning = class {
      * @param {Array<PlanningEvent>} events
      */
     addAllEvent(events) {
-        events.forEach(event => {
-            if (event.groups.indexOf(this.group) === -1) return;
-            this.events[event.start.getTime()] = event;
-        });
+        events
+            .filter(({ groups }) => groups.includes(this.group))
+            // In case of a weird group, add the event only if not somewhere else
+            .filter(({ groups }) => typeof this.group === 'number' || !groups.find(g => typeof g === 'number'))
+            .forEach(event => this.events[event.start.getTime()] = event);
     }
 
     /**

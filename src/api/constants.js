@@ -1,19 +1,6 @@
 const path = require('path');
 
 module.exports = Object.freeze({
-
-    //
-    // BASE APP CONFIG
-    //
-
-    /**
-     * Current scolar year
-     * e.g. 2017-2018 ==> 2017
-     *
-     * @type {Number}
-     */
-    YEAR: 2018,
-
     //
     // EXPORT CONFIG
     //
@@ -25,7 +12,7 @@ module.exports = Object.freeze({
      *
      * @type {string}
      */
-    FILE_NAME: 'edt_grp%d.ics',
+    FILE_NAME: 'edt_grp%s.ics',
 
     /**
      * Export folder
@@ -166,6 +153,6 @@ module.exports = Object.freeze({
     IF_SECTION: {
         3: [1, 2, 3, 4],
         4: [1, 2, 3, 4],
-        5: [1, 2, 3]
+        5: [1, 2, 3, 'A', 'B']
     },
 });

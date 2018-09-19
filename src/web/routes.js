@@ -11,15 +11,24 @@ const routes = new Router();
  * @returns {boolean} true if the group exists
  */
 function groupExists(year, group) {
-    return IF_SECTION[year] && IF_SECTION[year].indexOf(group) > -1;
+    return IF_SECTION[year] && IF_SECTION[year].includes(group);
+}
+
+/**
+ * Try to parse group or return the initial string
+ * @param group
+ * @return {(boolean | number) | *}
+ */
+function parseGroup(group) {
+    return (isNaN(+group) && +group) || group.toUpperCase();
 }
 
 /**
  * Route to the ICS File
  */
-routes.get('/export/:year(\\d+)/:group(\\d+)', (req, res, next) => {
+routes.get('/export/:year(\\d+)/:group', (req, res, next) => {
     const year = +req.params.year;
-    const group = +req.params.group;
+    const group = parseGroup(req.params.group);
 
     if (!groupExists(year, group)) return next();
 
@@ -30,9 +39,9 @@ routes.get('/export/:year(\\d+)/:group(\\d+)', (req, res, next) => {
 /**
  * Route for the RSS Feed
  */
-routes.get('/rss/:year(\\d+)/:group(\\d+)', (req, res, next) => {
+routes.get('/rss/:year(\\d+)/:group', (req, res, next) => {
     const year = +req.params.year;
-    const group = +req.params.group;
+    const group = parseGroup(req.params.group);
 
     if (!groupExists(year, group)) return next();
 

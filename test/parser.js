@@ -6,7 +6,7 @@ const fs = require('fs');
 
 const parser = require('../src/api/parser');
 const { PlanningEvent, Planning } = require('../src/api/models');
-const { EVENT_SELECTOR } = require('../src/api/constants');
+const { EVENT_SELECTOR, IF_SECTION } = require('../src/api/constants');
 
 describe('Parsing', function () {
     describe('event', function () {
@@ -29,7 +29,7 @@ describe('Parsing', function () {
                 </table>
             `);
 
-            const event = parser.parseEvent($, $(EVENT_SELECTOR));
+            const event = parser.parseEvent($, $(EVENT_SELECTOR), IF_SECTION[4]);
 
             event.should.be.instanceOf(PlanningEvent);
             event.should.have.property('groups').which.is.eql([1]);

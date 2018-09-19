@@ -2,18 +2,32 @@ const moment = require('moment');
 
 const { PlanningEvent, Planning } = require('./models/index');
 const {
-    YEAR, NB_MIN_PER_SPAN, EVENT_SELECTOR, IF_SECTION, REGEX_TIME_LOCATION,
+    NB_MIN_PER_SPAN, EVENT_SELECTOR, IF_SECTION, REGEX_TIME_LOCATION,
     REGEX_CLASSNAME, REGEX_DATE, MIDDLE_WEEK
 } = require('./constants');
 
 
 /**
+ * Current school year.
+ *
+ * For school year 2017-2018, current year will be 2017
+ */
+function getCurrentSchoolYear() {
+    const date = new Date();
+    if (date.getMonth() < 7) {
+        return date.getFullYear() - 1;
+    }
+    return date.getFullYear();
+}
+
+/**
  * Parse un DOM HTML en un objet {@type PlanningEvent}
  * @param $ Cheerio instance
  * @param event {Object} Evenement en version HTML
+ * @param groupsSchema {Array<string|number>} Group schema (IF_SECTION child)
  * @return {PlanningEvent} Evenement
  */
-function parseEvent($, event) {
+function parseEvent($, event, groupsSchema) {
     const planningEvent = new PlanningEvent();
 
     //
@@ -29,8 +43,7 @@ function parseEvent($, event) {
     //
     const start_group = +REGEX_CLASSNAME.exec($(event).parent().attr('class'))[1];
     const end_group = start_group + +$(event).attr('rowspan');
-    planningEvent.groups = Array.from({ length: end_group - start_group }, (v, k) => k + start_group);
-
+    planningEvent.groups = groupsSchema.slice(start_group - 1, end_group - 1);
 
     //
     // Date de l'évenement
@@ -42,7 +55,7 @@ function parseEvent($, event) {
 
     // On choisi l'année en fonction du numero de semaine
     planningEvent.start = moment(0)
-        .year(week_num > MIDDLE_WEEK ? YEAR : YEAR + 1)
+        .year(week_num > MIDDLE_WEEK ? getCurrentSchoolYear() : getCurrentSchoolYear() + 1)
         .week(week_num)
         .weekday(day_num)
         .hour(0)
@@ -83,7 +96,7 @@ function parseHTML($, if_year) {
 
     // On récupère tous les evenements
     // On utilise ici `module.exports.parseEvent()` pour pouver spy avec sinonjs
-    const allEvents = $(EVENT_SELECTOR).map((i, event) => module.exports.parseEvent($, event)).get();
+    const allEvents = $(EVENT_SELECTOR).map((i, event) => module.exports.parseEvent($, event, IF_SECTION[if_year])).get();
 
     // On initialise les plannings de if_year
     // et on ajoutes les events aux
