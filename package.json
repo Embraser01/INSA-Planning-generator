@@ -1,6 +1,6 @@
 {
   "name": "planning_generator",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "private": true,
   "scripts": {
     "start": "node ./src/app.js",
