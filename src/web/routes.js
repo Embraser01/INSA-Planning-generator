@@ -11,7 +11,13 @@ const routes = new Router();
  * @returns {boolean} true if the group exists
  */
 function groupExists(year, group) {
-    return IF_SECTION[year] && IF_SECTION[year].includes(group);
+    if (!IF_SECTION.hasOwnProperty(year)) return false;
+    let found = false;
+    Array.from(IF_SECTION[year]).forEach(e => {
+        found = group == e;
+        if (found) return;
+    });
+    return found;
 }
 
 /**
