@@ -20,7 +20,7 @@ function groupExists(year, group) {
  * @return {(boolean | number) | *}
  */
 function parseGroup(group) {
-    return (isNaN(+group) && +group) || group.toUpperCase();
+    return (!isNaN(+group) && +group) || group.toUpperCase();
 }
 
 /**
