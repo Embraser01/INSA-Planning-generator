@@ -9,16 +9,16 @@
     "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
   },
   "dependencies": {
-    "cheerio": "^1.0.0-rc.2",
-    "express": "^4.16.3",
-    "feed": "^2.0.1",
-    "moment": "^2.22.2",
+    "cheerio": "^1.0.0-rc.3",
+    "express": "^4.17.1",
+    "feed": "^4.0.0",
+    "moment": "^2.24.0",
     "request": "^2.88.0",
-    "request-promise-native": "^1.0.5"
+    "request-promise-native": "^1.0.7"
   },
   "devDependencies": {
-    "codecov": "^3.0.4",
-    "inquirer": "^6.1.0",
+    "codecov": "^3.5.0",
+    "inquirer": "^6.5.1",
     "mocha": "^5.2.0",
     "nyc": "^12.0.2",
     "should": "^13.2.3",
