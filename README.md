@@ -1,3 +1,7 @@
+⚠️Ce projet n'est plus maintenu puisque j'ai fini mes études. Hésitez pas à le fork si vous voulez. ⚠️
+
+-----
+
 # Générateur d'emplois du temps - INSA Lyon
 
 [![license](https://img.shields.io/github/license/Embraser01/INSA-Planning-generator.svg)](./LICENSE.md)
